@@ -1,4 +1,4 @@
-
+#test update for git commit
 #now copy the files over to the sdcard
     cp basictest.bin /media/dicky/EMPTY-2GB/ 
     cp project.map /media/dicky/EMPTY-2GB/ 
