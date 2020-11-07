@@ -1,0 +1,31 @@
+sjasmplus info
+
+
+Screen
+
+16k-Bank 5 is the bank read by the ULA to determine what to show on screen. The ULA connects directly to the larger memory space ignoring mapping; the screen is always 16k-Bank 5, no matter where in memory it is (or if it is switched in at all). Setting bit 3 of Memory Paging Control ($7FFD / ) will have the ULA read from 16k-bank 7 (the "shadow screen") instead, which can be used as an alternate screen. Beware that this does not map 16k-bank 7 into RAM; to alter 16k-bank 7 it must be mapped by other means. 
+
+the wiki literally says "enable display", not memory mapping. So bit6=0 means the Bank5 is displayed, and bit6=1 means Bank7 is displayed. The $52 register and what you see (with Z80N instructions) at address $4000 is completely unrelated to that, you can put there even Bank1.
+
+
+I use the `display` command to make sure I have enough space:
+For example:
+display "[ SHARED ] Final address (Max = $dbff): ",$," Space: ",$dc00-$
+This will display the final address for a bit of code, and the amount of space left. If the space left is something like 0xFFFF1234 (note the Fs), then this is a negative number and you've overflown,
+
+Peter Ped Helcmanovsky
+interesting issue...
+yes, it does not report overwriting the memory, as that's in my book considered feature (I'm using it sometimes to produce certain type of data).
+But I rarely overwrite code by accident, not sure how you manage that, sounds like you over-micro-manage the `org` to position code at particular places?
+Makes me wonder how your source looks when it happens to you.
+With Next device you could map single 8ki page in a warning/error mode to get report when you fill up whole 8ki page, that may be abused in certain use cases to guard also against leaking your code outside of expected range, but it's quite a "roundabout" to your original description...
+And I'm using myself `ASSERT $ < hard_limit` after certain blocks of code to make sure it didn't grow beyond the expected address, so adding few asserts here and there may help too.
+And finally, you can read the memory content in virtual device mode during third pass (when the machine code is generated), so if you do start your new code with some particular MMU/ORG, you can do `ASSERT { $ } == 0` to check if the two bytes under current pointer are still zeroes -> this should catch like 80% of code overwrite cases (unless you have bad luck of hitting zeroed part of opcode of `ld hl,0` and similar, or block of `nop`s).
+
+
+I use the `display` command to make sure I have enough space:
+For example:
+display "[ SHARED ] Final address (Max = $dbff): ",$," Space: ",$dc00-$
+This will display the final address for a bit of code, and the amount of space left. If the space left is something like 0xFFFF1234 (note the Fs), then this is a negative number and you've overflown,
+
+Not something I have experienced first hand - keep an eye on your stack as thats one that can catch you out. You can export a listing with --lst=memory.txt on the command line. Inside memory.txt will be the program listing and memory addresses / opcodes - you can then confirm what's going on. 

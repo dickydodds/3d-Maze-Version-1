@@ -1,0 +1,4 @@
+side wall drawing - code #5
+    slim down the side wall code as its copied 4 times!
+
+

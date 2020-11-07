@@ -1,0 +1,16 @@
+$42 is active only in UlaNext enabled mode.
+it is used as bit-mask to extract "INK" color from ULA attribute byte.
+The regular ZX after reset has ULA attributes filled with 0x38 = that's FLASH 0 : BRIGHT 0 : PAPER 7 : INK 0 (black ink over white paper)
+If you enable UlaNext mode and set $42=7, you will get 0x38 & 0x07 = 0 for INK, and 0x38 & ~0x07 = 0x38 & 0xF8 = 0x38 as intermediate result for PAPER, then further shifted down by how-many-bits-INK-mask-use, so 0x38>>3 = PAPER 7 -> the same config as regular ULA, but without FLASH/BRIGHT parts.
+With mask $42 = 1 you would get from the same attribute INK 0, PAPER 28 (0x1C).
+With mask $42 = 31 (0x1F = 0b0001'1111) you would get from the attribute 0x38 values INK 24, PAPER 1.
+The total amount of inks is then value in mask $42 + 1 (it's going from INK 0, so mask 3 are four inks: 0, 1, 2, 3, mask 1 are *two* inks).
+I'm not sure how you use "LSB", for me it stands as "Least Significant Byte" and makes sense for values which are "wider" than 8 bits, while the mask is 8 bits only = 1 byte. But sometimes in context it may also represent "least significant bit". (the "least significant" means that part of value, which encodes the low partial values like 1, 2, 4, ... the "most significant" is the other part of value, representing partial values like 32768, 16384, 8192, ... (128, 64, 32 in just eight bits).
+The ULA Next palette has then INKs from 0..mask (0..31 for example), and PAPERs from 128 (amount of papers is 256/inks_count, so for mask 31 there are 256/32 = 8 papers (see the inversion of mask is 0b1110'0000 -> three bits are used for paper, so 2^3 = 8 amount of all possible bit patterns encoded in three bits)
+So with UlaNext enabled, and mask$42=31 you can use in attribute bytes INK 0..31, and PAPER 0..7 shifted left by 5.
+The final attribute byte value for INK 18 and PAPER 4 is then (4<<5) + 18 = 4*32 + 18 = 146 (0x92 -> 0x80 is paper in upper three bits, 0x12 is ink in bottom five bits).
+The attribute byte will affect regular 8x8 bitmap data as with classic ZX ULA mode, so all zero bits will get "paper 4" color and one bits will get "ink 18".
+(EDIT: and with mask 255 there's no bit left for paper, so you have 256 ink colors (full palette) and paper/border color is taken from "transparency fallback" register $4A)
+
+it really helps to think about them as independent group of bits (and be fluent in binary) ... so then mask 31 is "three bits paper (left side = most significant), five bits ink (right side = least significant)" .. and three bits are values 0..7, and five bits are values 0..31 ("obvious" stuff if you are familiar with binary system and how integers are encoded in computers - may also help to do few on paper as exercise to warm up).
+

@@ -1,0 +1,21 @@
+side wall drawing - code #5
+    slim down the side wall code as its copied 4 times!
+
+to change just 1 bit to a 1 in a byte - OR it - all the bits except the one you want will stay the same.
+
+use AND a to leave A intact and just change flags.
+
+use AND instead of CP 00
+
+Use AND to mask off bits
+
+Use the following to check if a reg pair is zero SAVES BYTES AND IS QUICKER
+    LD A,H
+    AND L   (CAN ALSO USE OR L)
+    JP Z, XX
+
+xor a will zero a reg
+
+
+
+dump the halts at line 236

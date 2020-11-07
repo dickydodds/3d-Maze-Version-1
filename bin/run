@@ -1,0 +1,1 @@
+wine CSpect.exe -w3 -tv -zxnext -nextrom -mmc=../cspect-next-2gb/cspect-next-2gb.img

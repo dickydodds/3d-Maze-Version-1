@@ -1,0 +1,54 @@
+
+;11,12 - 22892
+        org 40000
+        
+        ld hl,22892-2-32
+        ld (upleft),hl
+
+        ld hl,22892+32-1
+        ld (leftright),hl
+
+        ld hl,22892+32-1+4
+        ld (upright),hl
+
+        ld hl,22892+32-1+4
+        ld (rightleft),hl
+
+        ld b,4       ;
+        ld a,b
+        ld c,12            ;12 lines
+
+here    ld hl,(upleft)
+        ld (hl),0               ; across left to right
+        ld de,$ffdf
+        add hl,de               ;jump to next line below
+        ld (upleft),hl
+
+    ;    ld hl,leftright
+    ;    ld (hl),8
+    ;    inc hl
+    ;    ld (leftright),hl
+        
+
+        halt
+        halt
+        halt
+        halt
+        halt
+        halt
+
+        djnz here
+        add a,2
+        ld b,a
+        cp 8
+        
+        jp z, end
+        jp here
+             
+end     
+        ret
+
+upleft     dw 0
+leftright  dw 0
+upright    dw 0
+rightleft  dw 0

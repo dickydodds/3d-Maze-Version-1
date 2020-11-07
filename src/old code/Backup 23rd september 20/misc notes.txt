@@ -1,0 +1,132 @@
+side wall drawing - code #5
+    slim down the side wall code as its copied 4 times!
+
+to change just 1 bit to a 1 in a byte - OR it - all the bits except the one you want will stay the same.
+
+use AND a to leave A intact and just change flags.
+
+use AND instead of CP 00
+
+Use AND to mask off bits
+
+Use the following to check if a reg pair is zero SAVES BYTES AND IS QUICKER
+    LD A,H
+    AND L   (CAN ALSO USE OR L)
+    JP Z, XX
+
+
+;#####################################################################
+;#####################################################################
+;draw section 5 upper 1 middle block
+;#####################################################################
+;#####################################################################
+
+
+draw_5m:
+
+;now draw the maze starting at the furthest point we can see
+; i.e. the middle of the display
+
+
+;first we need to decrement how far we can see to the layer
+;we are working on
+
+;        ld hl,(furthest_point)  ;load our last furthest point
+        call load_de            ;get left and right and front jump into de reg
+
+        add hl,de               ;Additional add to simulate layer 6
+        ld (furthest_point),hl ;re save it
+
+;        ld de,$0001             ;to move the display position +1
+;        ld (var4),de
+
+;move the maze location pointer 1 to the right - used for all
+;remaining blocks to test if there is a wall there or not.
+
+ ;       ld de,(right)
+ ;       add hl,de
+ ;       ld (var6),hl            ;right position in maze from our location
+
+ ;       ld (var3),de            ;display position +1
+        ld   de,$0176-32-32       ; offset to row 11 column 10 - left of  centre of the 3d view.
+        call do_draw_5m
+ 
+      ret        
+        jp draw_4m              ;now draw the 4th level
+
+;start drawing the block
+
+do_draw_5m:
+
+;##############################################################################
+;see if h is ouside the current maze 256 byte boundary - do nothing 
+;as we are not drawing maze walls above us
+
+        ld a,(maze_highbyte)
+        cp h                    ;are we at the top part of the maze?
+        jp z,cont_5a 
+ 
+;##############################################################################                              
+
+       ; ld hl,(furthest_point)  ;load our last furthest point
+       ; ex de,hl
+        ld   hl,(d_file)        ; fetch the location of the display file.
+        add  hl,de
+       ; dec hl
+       ; ld a,$8b                 ;draw top corner
+       ; ld (hl),a
+       ; dec hl
+        ld a,_smallwall
+        ld (hl),a
+        dec hl
+        ld (hl),a
+        dec hl
+        ld (hl),a
+        dec hl
+        ld de,34                ;jump to next line below
+        add  hl,de
+        ld (hl),a
+        inc hl
+        ld (hl),a
+        inc hl
+        ld (hl),a
+        
+        ld de,33                ;jump 1 line below
+        add  hl,de
+        ld a,_black
+        ld (hl),a
+        dec hl
+        ld (hl),a
+        dec hl
+        ld (hl),a
+
+       ; ld a,$8c                 ;draw top corner
+       ; ld (hl),a
+        
+;        ld de,$FFE4
+;                    ;subtract 32 and move 3 spaces right
+;        add hl,de
+;
+;        ld a,$8b                 ;draw top corner
+;        ld (hl),a
+;        dec hl
+;        ld a,_smallwall
+;        ld (hl),a
+;        dec hl
+;        ld (hl),a
+;        dec hl
+;        ld (hl),a
+;        dec hl
+;        ld (hl),a
+;        dec hl
+;        ld (hl),a
+;        dec hl
+;        ld a,$8c                 ;draw top corner
+;        ld (hl),a
+        
+         ret
+
+        
+; draw block.
+        ; retrieve the maze location.
+

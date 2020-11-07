@@ -1,0 +1,15 @@
+
+              ld a,(depth)
+              cp 6
+              jp z,draw_6	;just draw end middle block perhaps??
+              cp 5
+              jp z,draw_5	;only need to draw 3 block + 1 part
+              cp 4
+              jp z,draw_4	;only need to draw 2 block + 1 part
+              cp 3
+              jp z,draw_3	;only need to draw 1 block + 1 part of 2 columns	
+              cp 2
+              jp z,draw_2	;only need to draw 1 block
+              cp 1
+              jp z,draw_1	;only need to draw 1 block
+              jp draw_0		;only need to draw edge blocks
