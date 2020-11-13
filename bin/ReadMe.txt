@@ -1,5 +1,24 @@
 ZXSpectrum emulator by Mike Dailly (c) Copyright 1998-2020 All rights reserved
 
+Be aware...emulator is far from well tested, and might crash for any reason - sometimes just out of pure spite!
+
+NOTE: DISTRIBUTION WITH COMMERCIAL TITLES IS NOT PERMITTED WITHOUT WRITTEN CONSENT.
+
+Installing
+----------
+Windows - You will need the latest .NET, and openAL ( https://www.openal.org/downloads/ )
+Linux   - You will need the full MONO  (on ubuntu do "apt-get install mono-devel" )
+OSX     - You will need the latest mono from https://www.mono-project.com/
+
+
+NXtel release
+-------------
+NXtel is written by SevenFFF / Robin Verhagen-Guest and is 
+(c) Copyright 2018,2019, all rights reserved, and released under the GPL3 License.
+( see license here: https://github.com/Threetwosevensixseven/NXtel/blob/master/LICENSE)
+Latest versions can be found here: https://github.com/Threetwosevensixseven/NXtel/releases
+
+
 Command Line Options
 ======================================================================================
 -zxnext            =  enable Next hardware registers
@@ -33,6 +52,7 @@ Command Line Options
 -minor=<value>     =  Sets the value returned by NextReg $0E
 -debug             =  start up in the debugger
 -remote            =  Enable the remote debugger mode, by disabling the debugger screen.
+-fill=$XXXXX...XX  =  Fill memory with this hex sequence on power up
 
 
 
@@ -102,33 +122,8 @@ New Z80n opcodes on the NEXT
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 General Emulator Keys
+======================================================================================
 Escape  - quit
 F1      - Enter/Exit debugger
 F2      - load SNA
@@ -139,7 +134,11 @@ F7      - 14Mhz mode            (when not in debugger)
 F8      - 28Mhz mode            (when not in debugger)
 F10     - Toggle Key mode
 
+
+
+
 Debugger Keys
+======================================================================================
 F1                  - Exit debugger
 F2                  - load SNA
 F3                  - reset
@@ -158,6 +157,8 @@ CTRL+SHIFT+Up       - move trace window up 16 bytes
 CTRL+SHIFT+Down     - move trace window down 16 bytes
 CTRL+SHIFT+PageUp   - Page trace window up
 CTRL+SHIFT+PageDown - Page trace window down
+CTRL+SHIFT+[0-9]    - Set Bookmark
+CTRL+[0-9]          - Goto Bookmark
 
 Mouse is used to toggle "switches"
 HEX/DEC mode can be toggled via "switches"
@@ -166,8 +167,9 @@ You can also use the mouse to select "bytes" to edit in the memory window, simpl
 mouse over the top and left click. Enter will cancel, as will clicking outside the
 memory window.
 
+
 Debugger Commands
-================================================================================
+======================================================================================
 M <address>         Set memory window base address (in normal 64k window)
 M <bank>:<offset>   Set memory window into physical memory using bank/offset
 G <address>         Goto address in disassembly window
@@ -197,3 +199,153 @@ NEXTREG <reg>,<val> Poke a next register
 SAVE "NAME",add,len                   Save in the 64K memory space
 SAVE "NAME",BANK:OFFSET,length        Save in physical memory using a bank and offset as the start address
 SAVE "NAME",BANK:OFFSET,BANK:OFFSET   Save in physical memory using a bank and offset as the start address, and as an end address
+
+
+
+
+
+#CSpect Plugins
+======================================================================================
+An example (empty) plugin is provided, along with the source to the Plugin interface
+
+Write a DLL based on the iPlugin interface, and implement all members of that interface.
+
+    // Type of access
+    public enum eAccess
+    {
+        /// <summary>All READ data comes FROM this port</summary>
+        Port_Read = 1,
+        /// <summary>All WRITE data goes TO this port</summary>
+        Port_Write = 2,
+        /// <summary>All reads to this address come from this plugin</summary>
+        Memory_Read = 3,
+        /// <summary>All writes from this address come from this plugin</summary>
+        Memory_Write = 4,
+        /// <summary>Next register write</summary>
+        NextReg_Write = 5,
+        /// <summary>Next register read</summary>
+        NextReg_Read = 6
+    };
+
+
+bool Write(eAccess _type, int _port, byte _value )
+---------------------------------------------------
+On write access this function is called with the access type, port and byte being written.
+If you use the value passed, you can return TRUE to indicate you've used the value, and no 
+more extensions or internal functions will be called.
+
+
+byte Read(eAccess _type, int _address, out bool _isvalid)
+---------------------------------------------------------
+On read access to the requested address/port/reg, this function is called.
+_isvalid should be set to true if you "use up" the value, or it'll be pased onto 
+other plugins, or the internal functions will be called.
+
+
+List<sIO> Init( iCSpect _CSpect )
+---------------------------------
+Initialise the plugin. iCSpect it an interface back into the emulator that allows you to
+Peek,Poke, IN,OUT, and Set/Get Nextreg values.
+returns a list of IO request structures.
+
+
+void Quit()
+-----------
+Is called on exit, letting you free up unmanaged system resources.
+
+
+void Tick()
+-----------
+Called one per game/frame refresh
+
+
+
+
+
+
+esxDOS simulation
+===================
+M_GETSETDRV	-	simulated
+F_OPEN		-	simulated
+F_READ		-	simulated
+F_WRITE		-	simulated
+F_CLOSE		-	simulated
+F_SEEK      	-   	simulated
+F_FSTAT     	-   	simulated
+F_STAT      	-   	simulated
+
+
+
+
+Next OS streaming API
+---------------------
+; *************************************************************************** 
+; * DISK_FILEMAP ($85)                                                      * 
+; *************************************************************************** 
+; Obtain a map of card addresses describing the space occupied by the file. 
+; Can be called multiple times if buffer is filled, continuing from previous. 
+; Entry: 
+;       A=file handle (just opened, or following previous DISK_FILEMAP calls) 
+;       IX=buffer 
+;       DE=max entries (each 6 bytes: 4 byte address, 2 byte sector count) 
+; Exit (success): 
+;       Fc=0 
+;       DE=max entries-number of entries returned 
+;       HL=address in buffer after last entry 
+;       A=card flags: bit 0=card id (0 or 1) 
+;                     bit 1=0 for byte addressing, 1 for block addressing 
+; Exit (failure): 
+;       Fc=1 
+;       A=error 
+; 
+; NOTES: 
+; Each entry may describe an area of the file between 2K and just under 32MB 
+; in size, depending upon the fragmentation and disk format. 
+; Please see example application code, stream.asm, for full usage information 
+; (available separately or at the end of this document).
+
+; *************************************************************************** 
+; * DISK_STRMSTART ($86)                                                    * 
+; *************************************************************************** 
+; Start reading from the card in streaming mode. 
+; Entry: IXDE=card address 
+;        BC=number of 512-byte blocks to stream 
+;        A=card flags. $80 = don't wait for card being ready.
+; Exit (success): Fc=0 
+;                 B=0 for SD/MMC protocol, 1 for IDE protocol 
+;                 C=8-bit data port 
+; Exit (failure): Fc=1, A=esx_edevicebusy 
+; ; NOTES: 
+; On the Next, this call always returns with B=0 (SD/MMC protocol) and C=$EB 
+; When streaming using the SD/MMC protocol, after every 512 bytes you must read 
+; a 2-byte CRC value (which can be discarded) and then wait for a $FE value 
+; indicating that the next block is ready to be read. 
+; Please see example application code, stream.asm, for full usage information 
+; (available separately or at the end of this document).
+
+; *************************************************************************** 
+; * DISK_STRMEND ($87)                                                      * 
+; *************************************************************************** 
+; Stop current streaming operation. 
+; Entry: A=card flags 
+; Exit (success): Fc=0 
+; Exit (failure): Fc=1, A=esx_edevicebusy 
+; 
+; NOTES: 
+; This call must be made to terminate a streaming operation. 
+; Please see example application code, stream.asm, for full usage information 
+; (available separately or at the end of this document).
+
+
+
+
+
+
+
+ZX Spectrum ROM
+----------------
+Amstrad have kindly given their permission for the redistribution of their copyrighted material but retain that copyright
+
+
+
+

@@ -1,4 +1,4 @@
-﻿#CSpect V2.12.36 ZXSpectrum emulator by Mike Dailly
+﻿#CSpect V2.12.37 ZXSpectrum emulator by Mike Dailly
 (c)Copyright 1998-2020 All rights reserved
 
 Be aware...emulator is far from well tested, and might crash for any reason - sometimes just out of pure spite!
@@ -8,6 +8,25 @@ NOTE: DISTRIBUTION WITH COMMERCIAL TITLES IS NOT PERMITTED WITHOUT WRITTEN CONSE
 
 Whats new
 ======================================================================================
+v2.12.37
+--------
+RAM is now filled with random bytes on power up to help simulate the real machine
+-fill=$XXXXX allows you top specify a specific byte sequence to fill RAM with
+Debugger: general layout adjustment.
+Debugger: text colour changes when user bar over the top for easier reading
+Debugger: $ added to all hex numbers
+Debugger: Hex numbers are now coloured for easier spotting
+Debugger: Added "peek()" of all memory access to the left of the disassembly line
+Debugger: Added 16bit "peek()" of all 16bit register load/store locations
+Debugger: Added a small permanent memory dump using 16bit registers as the base address
+Debugger: ` now displays the current screen in the debugger (Keypad-Enter also works)
+Debugger: Memory window bookmarks added.  CTRL+SHIFT+[0-9] to set, CTRL+[0-9] to jump to.
+CSpect should now run on 32bit and 64bit machines
+Now detects if the shader fails to compile, and switches off the shader mode
+Fixed port $123b 16k bank offset mode
+Fixed unified attached sprites
+
+
 v2.12.36
 --------
 Fixed F_RENAME to use IX instead of HL (now working)
