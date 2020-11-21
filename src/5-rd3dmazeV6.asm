@@ -1,7 +1,8 @@
 
 
 ;#############################################
-;original code to draw maze FRONT walls here
+;original code to draw maze FRONT walls here from 3D Monster Maze
+;call it a homage ;)
 ;#############################################
 
 
@@ -9,7 +10,7 @@
 ; draw wall in front of player
 ; ############################
 
-; a wall has been found directly in front of the player within visible range and so a wall face must be drawn centred within the view.
+; a wall face must be drawn centred within the view.
 ; the wall face is one character wider than it is high.
 
 draw_front_view:
@@ -409,20 +410,21 @@ floorcol      equ 98             ; brown paper, black ink
 ;corridcol     equ 112            ; yellow paper, black ink   
 sky_floor     db  40            ;store current sky or floor colour
 wall_temp     db  0             ;temporary store for wall colour graduation
+scr_attr_add  dw $c300  ;22528          ;start of spectrum attributes after char screen or 22528 actual sceen
 
 ; go through the display file at c000, check the character, change the colour
 ; if at row 26, start on next line at far left (0)
 ; do it again until you reach line 24 and column 25           
 
-; display is at location c000
+; built character display is at location c000
 
 draw_colours: ld a, skycol           ; set the sky colour
               ld (sky_floor),a
               sub a                 ; make a zero
               ld (left),a
               ld bc,783             ; 768 attributes to fill
-              ld de,22528;+32768   ; start of spectrum attributes
-              ld hl,$c000;a701      ; start of zx81 display file in memory
+              ld de,(scr_attr_add)  ; start of spectrum attributes after char screen
+              ld hl,$c000           ; start of zx81 display file in memory
                            
 here:         call set_wall_col     ;set the wall colour graduation colour
               call loop_1
@@ -580,7 +582,8 @@ loop_4:        dec bc           ;change ldir count
                ; de holds current position in spectrum display              
 
 
-               ld hl,22528+383        ;this for display at 22528 is 22911   ; start of first floor line
+               ld hl,(scr_attr_add)
+               add hl,383        ;this for display at 22528 is 22911   ; start of first floor line
                sbc hl,de        ;are we there yet?
                jp nz,exit2 ;was nz
                ld a,floorcol
@@ -598,7 +601,7 @@ set_wall_col:
                 ;de holds current attribute cell we are colouring in
 
                 ld a,188
-                ld hl,22528     ;top of the display
+                ld hl,(scr_attr_add)     ;top of the display
                 sub hl,de
                 jr nz,setcol_1   ;check next quarter of display
                 ld (wallcol),a
@@ -606,35 +609,40 @@ set_wall_col:
 
              
 setcol_1:       add a,2  
-                ld hl,22528+128    ;next 1/6 of the display
+                ld hl,(scr_attr_add)
+                add hl,128    ;next 1/6 of the display
                 sub hl,de
                 jr nz,setcol_2   ;check next 1/6th of display
                 ld (wallcol),a
                 jr setcol_exit
 
 setcol_2        add a,2
-                ld hl,22528+256     ;next 1/6  down of the display
+                ld hl,(scr_attr_add)
+                add hl,256     ;next 1/6  down of the display
                 sub hl,de
                 jr nz,setcol_3   ;check next 1/6th of display
                 ld (wallcol),a
                 jr setcol_exit  
             
 setcol_3        add a,2
-                ld hl,22528+384     ;    ;next 1/6 of the display
+                ld hl,(scr_attr_add)
+                add hl,384     ;    ;next 1/6 of the display
                 sub hl,de
                 jr nz,setcol_4   ;check next 1/6th of display
                 ld (wallcol),a
                 jr setcol_exit
 
 setcol_4        add a,2
-                ld hl,22528+512    ;next 1/6 of the display
+                ld hl,(scr_attr_add)
+                add hl,512    ;next 1/6 of the display
                 sub hl,de
                 jr nz,setcol_5   ;check next 1/6th of display
                 ld (wallcol),a
                 jr setcol_exit  
             
 setcol_5        add a,2 
-                ld hl,22528+640     ;bottom 6th of the display
+                ld hl,(scr_attr_add)
+                add hl,640     ;bottom 6th of the display
                 sub hl,de
                 jr nz,setcol_exit   ;check next 1/6th of display
                 ld (wallcol),a

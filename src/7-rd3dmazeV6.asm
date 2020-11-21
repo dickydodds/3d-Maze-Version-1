@@ -33,13 +33,12 @@
 ; --------------
 ; the code for the wall must have bit 7 set whereas the other codes must have bit 7 reset.
 
-_mw     equ  128                 ; wall.
-_mp     equ  32                  ; passageway.
-;_mr     equ  82                  ; rex.
-_me     equ  192   ;bin 11000000 ; exit.
-_sp     equ  32
-_mh     equ  129                 ;seperator or end wall
-_ms     equ  160   ;bin 10100000 ;switch            
+_mw     equ  128   ;bin 10000000              ; wall.
+_mp     equ  32    ;bin 00100000              ; passageway.
+_me     equ  192   ;bin 11000000              ; exit.
+_sp     equ  32    ;bin 00100000              ; passageway.
+_mh     equ  129   ;bin 10000001              ;seperator or end wall
+_ms     equ  131   ;bin 11100000              ;switch            
 
 
 ; _mh - outside wall
@@ -340,8 +339,7 @@ map_15:
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;16
 
 ;map start positions
-;map0   
-        dw  00
+
 ;map0   
         dw  00
 ;map1   
@@ -658,4 +656,52 @@ d_box_1:
 
             ret 
 
+;*********************************************************************
+; Making LDIR 21% faster
+;taken from MSX Assembly page - http://map.grauw.nl/articles/fast_loops.php
 
+
+;LDI Performs a "LD (DE),(HL)", then increments DE and HL, and decrements BC.
+
+;Now, on with the lesson. Aside from OTIR you can also unroll other things. INIR, LDIR and LDDR will also greatly benefit from this method, and sometimes it is also ;beneficial to unroll normal loops which use DJNZ, JR or JP.
+
+;In the case of LDIR however, the number of loops is often too large to simply use an LDI that number of times. That would take up too much space. So what we can do ;instead is to unroll only part of the loop. Say, we need to LDIR something 256 (100H) times. Instead of LDIR we could write:
+
+;we need to move 768 bytes = 48 x 16
+copy_colours:
+
+ ;       ld hl,$c300
+ ;       ld bc,768
+ ;       ld de,22528
+ ;       ld a,(hl)
+ ;       ld (de),a      
+ ;       ldir
+ ;       ret
+
+
+              ld bc,768             ;number of cells to copy
+              ld hl,attr_screen     ;address of colours screen to copy
+              ld de,22528           ;attributes on main screen
+Loop_col:
+    ldi  ; 16x LDI
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    ldi
+    jp pe,Loop_col  ; Loop until bc = zero           
+;        ld a,c
+;        dec a
+;        jp nz, loop_col
+              ret
+      

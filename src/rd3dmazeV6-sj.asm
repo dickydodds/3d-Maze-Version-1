@@ -155,19 +155,23 @@ main_loop:
               ;my print used to print screen @c000 to 16384 inc udg's  
               call my_print         ;copy to screen from c000
             
-              call draw_colours     ;colourise the display
-    
+              ;we need to copy the colours to an alternate memory screen then copy them back to the main screen
+              ;we do this because we use the alternate colour screen when we transition between levels
+              call draw_colours     ;colourise the display but store at address 'attr_screen'
+              call copy_colours     ;copy colour map to screen 
+
               ;make sure we point to our character set
               ld hl,charset_1-256
               ld (base),hl
-              call compass          ; draw compass
+            ;  call compass          ; draw compass
 
 ;------------------------------------------------------------------------
               ;see if we need to draw the door or switch
-    ld a,1
-    ld (switch_pulled),a
+    ;ld a,1
+    ;ld (switch_pulled),a
         
-              call draw_door
+              call draw_door        ;see if we need to draw a door
+              call draw_switch     ;see if we need to draw a switch
 ;----------------------------------------------------------------------
 ;setup right hand side of the screen
               call draw_screen_right
@@ -229,7 +233,7 @@ wait4key:
               jp z,plus
         
 key_6         cp 8               ;6 (down) pressed
-              jp nz, comp_4      ;carry on if not pressed
+              jp nz, comp_4      ;carry on if not pressed otherwise return to BASIC
               nextreg $43,0      ;turn off ulanext
               nextreg $69,0      ;turn off ula banking
               NEXTREG $50,$FF
@@ -319,10 +323,10 @@ move_forward:
              jr z,cont_a            ;if not, just continue in the normal way
 ;Door is in front of us AND open so lets exit!
 
-           ; ld hl,switch_pulled
+           ; reset the switch pulled back to off position
             xor a
             ld (switch_pulled),a
-;need to set thre player start position now.              
+;need to set the player start position now.              
 
             ld a,(cur_map)
             dec a               ;point to our next map  
@@ -341,7 +345,34 @@ move_forward:
          ;   nextreg $69,64          ;turn on paging
             jp main_loop          ;jump to our next level
 ;--------------------------------------------------------------------------------
-cont_a:      ld a,(maxview)         ;if our maximum view depth = 0 ie we are
+cont_a:      
+;1st, check if we are trying to flick the switch on
+;so, is the door open?
+             
+; switch will always face NORTH. 
+; show switch type = 0 = off, 1 = on
+
+             ;are we facing south?
+             ld a,(player_dir)
+             sub 2                  ;2 = south
+             jr nz,cont_b           ;if not, just continue in the normal way
+
+             ld hl,(player_pos)
+             ld de, $0010           ; (+16) to go to next line in front of us - south
+             add hl,de
+             ld a,(hl)
+             cp _ms                 ;is it our SWITCH block?
+             jr nz,cont_b           ;if not, just continue in the normal way
+             ;YES its a switch - so mark it as switched on
+             ld a,1
+             ld (switch_pulled),a
+
+;draw switch 
+            call draw_switch      ;draw our switch
+            jp main_loop          ;jump to our next level
+;--------------------------------------------------------------------------------
+
+cont_b:       ld a,(maxview)         ;if our maximum view depth = 0 ie we are
                                     ;in front of a wall face
                                     ;then do nothing
               inc a
@@ -604,10 +635,6 @@ char_screen:   block 768    ;view screen built here from characters
 attr_screen:   block 768    ;colours held here for door animation
 
 ;################################################
-
-
-;reserved for the stack - 440 bytes
-;64046 to 64486 or 64511
 
 
 ;##############################################

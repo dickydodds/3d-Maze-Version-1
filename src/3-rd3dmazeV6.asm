@@ -1,4 +1,5 @@
-         
+   
+
 ;##################################################
 ; Start to draw the maze in memory
 ;##################################################
@@ -86,8 +87,13 @@ loop2:        ld a,(flags)
               ld a,(hl)         ; this is the furthest point we can see
               cp _mw ;=128      ;is it a wall here
               jr z,j2  
+
 ;check for an exit wall and treat as if its a wall
               cp _me
+              jp z, j2   ;if no wall check for end wall
+
+;check for an switch wall and treat as if its a wall
+              cp _ms
               jp nz, check_mh   ;if no wall check for end wall
                                 
 j2:           ld a,b            ;there is a wall if we get here
@@ -289,16 +295,12 @@ de3:          ld de, $0001      ; (+1) to go to next line behind - east
 
 
 ;#################################################################################
-;DOOR DRAWING ROUTINES
+;DOOR & SWITCH DRAWING ROUTINES
 
 ;#################################################################################
 ;see if we need to draw an open or closed door
 
 ; show door type = 0 = front, 1 = side
-;side_or_front_door  db 0
-;             ld (show_exit),a
-                ;side_or_front_door
-;             ld (switch_pulled),a
 
 draw_door:   ;check to see if we need to show the exit door
              ;door will always face NORTH. 
@@ -361,6 +363,66 @@ _open:       call draw_door_right_open
              ret
 
 ;#########################################################################################
+;SWITCH Drawing Routine - I am being very lazy here and copying the code from the door 
+;drawing as its the same thing to do for both the door and switch and  cant be bothered atm to 
+;modify the dor routine and save bytes! (nov 2020)
+;-----------------------------------------------------------------------------------------
+
+draw_switch:
+
+ ;check to see if we need to show the Switch
+             ;switch will always face NORTH. 
+           ;  xor a                  ;make reg a zero to say no switch
+           ;  ld (show_switch),a
+             ;are we facing south?
+             ld a,(player_dir)
+             sub 2                  ;2 = south
+             jr nz,check_east      ;if not check if switch is to our right hand side
+             ld hl,(player_pos)
+             ld de, $0010           ; (+16) to go to next line in front of us - south
+             add hl,de
+             ld a,(hl)
+             cp _ms                 ;is it our SWITCH?
+             jr nz,check_sw_east      ;if not check if the SWITCH is to our right hand side
+             ;YES its a switch - so draw it - but only if we are looking south
+             ld a,(switch_pulled)
+             and a
+             jr z,switch_off
+             call  draw_switch_on
+             ;print the switch on message
+             ld ix,message_switchon
+             CALL print_message
+             ret           
+
+switch_off:  call draw_switch_off
+             ret
+
+;theres no door immediately in front of us but now check if theres a door 1 space in front and to the right of us                
+check_sw_east:
+             ;1st check if we are facing East as door will be on our right, 1 space ahead of us
+             ; so we have to be facing EAST
+             ld a,(player_dir)
+             sub 3              ;EAST = 3
+             ret nz             ;exit as theres no door to our right 
+
+             ld hl,(player_pos)
+             inc hl             ;move test point to 1 place in front of us
+             ld de, $0010      ; (+16) to go to next line in front of us - EAST
+             add hl,de
+             ld a,(hl)         
+             cp _ms             ;;is it our DOOR?
+             ret nz
+             ;there IS a door and it will always face NORTH and be on our right
+             ;yes its our door - so draw it
+
+             ;determine if its open or closed
+             ld a,(switch_pulled)
+             and a
+             jr nz,open_a           ;0=closed 1 = open
+             call draw_switch_right_closed
+             ret
+open_a:      call draw_switch_right_open         
+             ret
 
 
 

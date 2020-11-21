@@ -221,7 +221,7 @@ message_get:          db 1,25,87,$88,"G E T",$89,$7f
 message_out:          db 2,25,87,$88,"O U T",$89,$7F 
 message_border4:      db 3,25,148,$b3,$b2,$b3,$20,$b2,$b3,$b2,$7f
 message_closed:       db 23,2,60," Go flick the switch ",$7F
-message_switchon:     db 23,1,70," The Door is now Open ",$7F
+message_switchon:     db 23,1,72," The Door is now Open! ",$7F
 message_leave:        db 23,1,100," Woohoo! Time to leave ",$7F
 message_level         db 15,25,87," LEVEL ",$7f
 
@@ -426,7 +426,7 @@ abc_a:          push bc
                 ;do white colour bars first
                 ld hl,22710         ;start of bar bit at the top of the door
                 ld de,32            ;to jump 1 line down
-                ld a,1              ;draw 9 attribute across
+                ld a,1              ;draw 1 attribute across
                 ld (att_count),a
                 ld a,199
                 ld c,a              ;set colour to white ink, black paper
@@ -493,19 +493,7 @@ abc_b:          push bc
                 CALL print_message
                 ld ix,bot_right_op3        ;point to our data to print
                 CALL print_message
-
-          
-;now colour the attributes correctly to look diagonal
-                ;do white colour bars first
-               ; ld hl,22710         ;start of bar bit at the top of the door
-               ; ld de,32            ;to jump 1 line down
-               ; ld a,1              ;draw 9 attribute across
-               ; ld (att_count),a
-               ; ld a,199
-               ; ld c,a              ;set colour to white ink, black paper
-               ; ld a,14             ;do 16 lines
-               ; call rept_5         ;colour our door correctly
-                
+         
                 ret
 
 ;top 2 parts of the door
@@ -532,6 +520,111 @@ right_door_open:      ;15 lines
 bot_right_op1:    db 19,21,188, $20,$20,$7F,$7F;$20,$7F
 bot_right_op2:    db 20,21,98, $20,$20,$7F,$7F;$20,$7F
 bot_right_op3:    db 21,22,98,     $20,$7F,$7F;$20,$7F
+
+;--------------------------------------------------------------------
+;--------------------------------------------------------------------
+;switch animation below - neds to be switched on
+;--------------------------------------------------------------------
+;--------------------------------------------------------------------
+;switch_anim:
+
+draw_switch_off:
+               ; exit_closed 13 lines of 5 chars
+                ld b,13
+                ld hl,switch_off_g      ;start of switch off graphic
+abc_b1:          push bc
+                push hl
+                ld ix,hl                ;point to our data to print
+                CALL print_message
+                pop hl
+                ld de,9                 ;each line is 9 chars long
+                add hl,de
+                ld ix,hl
+                pop bc
+                djnz abc_b1
+          
+;now colour the attributes to show switch is in the OFF position - colour it blue
+                ;do white colour bars first
+                ld hl,22764;22710-10+32+32   ;start of bar bit at the top of the door
+                ld de,32            ;to jump 1 line down after each print
+                ld a,1              ;draw 9 attribute across
+                ld (att_count),a
+                ld a,184            ; colour to print (199=white)
+                ld c,a              ;set colour to white ink, black paper
+                ld a,6             ;do 16 lines
+                call rept_5         ;colour our door correctly
+                
+                ret
+
+;switch in off position
+switch_off_g:      ;13 lines
+                db 6,10,136, $80,$81,"#",$80,$81,$7F
+                db 7,10,136, $82,$83," ",$82,$83,$7F
+                db 8,10,136, $80,$81," ",$80,$81,$7F
+                db 9,10,136, $82,$83," ",$82,$83,$7F
+                db 10,10,136,$80,$81," ",$80,$81,$7F
+                db 11,10,136,$82,$83," ",$82,$83,$7F
+                db 12,10,136,$80,$81," ",$80,$81,$7F
+                db 13,10,136,$82,$83,"#",$82,$83,$7F
+                db 14,10,136,$80,$81,"#",$80,$81,$7F
+                db 15,10,136,$82,$83,"#",$82,$83,$7F
+                db 16,10,136,$80,$81,"#",$80,$81,$7F
+                db 17,10,136,$82,$83,"#",$82,$83,$7F
+                db 18,10,136,$80,$81,"#",$80,$81,$7F
+
+
+;--------------------------------------------------------------------
+
+draw_switch_on:
+               ; exit_closed 13 lines of 5 chars
+                ld b,13
+                ld hl,switch_on_g      ;start of switch off graphic
+abc_b2:          push bc
+                push hl
+                ld ix,hl                ;point to our data to print
+                CALL print_message
+                pop hl
+                ld de,9                 ;each line is 9 chars long
+                add hl,de
+                ld ix,hl
+                pop bc
+                djnz abc_b2
+          
+;now colour the attributes to show switch is in the OFF position - colour it blue
+                ;do white colour bars first
+                ld hl,22924;22710-10+32+32+32+32+32+32+32   ;start of bar bit at the top of the door
+                ld de,32            ;to jump 1 line down after each print
+                ld a,1              ;draw 9 attribute across
+                ld (att_count),a
+                ld a,148            ; colour to print (199=white)
+                ld c,a              ;set colour to white ink, black paper
+                ld a,6             ;do 16 lines
+                call rept_5         ;colour our door correctly
+                
+                ret
+
+;switch in off position
+switch_on_g:      ;13 lines
+                db 6,10,136, "+","-","-","-","+",$7F
+                db 7,10,136, "|","|"," ","|","|",$7F
+                db 8,10,136, "|","|"," ","|","|",$7F
+                db 9,10,136, "|","|"," ","|","|",$7F
+                db 10,10,136,"|","|"," ","|","|",$7F
+                db 11,10,136,"|","|"," ","|","|",$7F
+                db 12,10,136,"|","#"," ","#","|",$7F 
+                db 13,10,136,"|","#"," ","#","|",$7F
+                db 14,10,136,"|","#"," ","#","|",$7F
+                db 15,10,136,"|","#"," ","#","|",$7F
+                db 16,10,136,"|","#"," ","#","|",$7F
+                db 17,10,136,"|","#"," ","#","|",$7F
+                db 18,10,136,"+","-","-","-","+",$7F
+
+draw_switch_right_closed:   ret
+
+draw_switch_right_open:   ret
+
+
+
 
 
 
