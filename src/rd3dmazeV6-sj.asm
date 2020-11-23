@@ -163,7 +163,7 @@ main_loop:
               ;make sure we point to our character set
               ld hl,charset_1-256
               ld (base),hl
-            ;  call compass          ; draw compass
+              call compass          ; draw compass
 
 ;------------------------------------------------------------------------
               ;see if we need to draw the door or switch
@@ -966,6 +966,32 @@ _chars:
   db  0,76,82,70,66,82,76,0             ;da
   db  0,66,70,74,94,66,66,0             ;db
   db  0,78,80,76,66,82,76,0             ;dc
+
+;characters to print around the switch
+  db  255,0,255,0,255,0,255,0           ;dd  ;horizontal bars x 4
+  db  255,128,191,160,175,168,171,170   ;de  ;top left corner
+  db  170,171,168,175,160,191,128,255   ;df  ;bot left corner
+  db  170,170,170,170,170,170,170,170   ;e0  ;vertical bars
+  db  255,1,253,5,245,21,213,85         ;e1  ;top right corner
+  db  85,213,21,245,5,253,1,255         ;e2  ;bot right corner
+  db  0,255,0,255,0,255,0,255           ;e3  ;bot horizontal bars
+  db  85,85,85,85,85,85,85,85           ;e4  ;right vertical bars
+
+;side view switch chars
+  db  255,255,254,252,249,242,228,201   ;e5 ;top triangle bit
+  db  146,164,169,170,170,170,170,170   ;e6 ; top left corner
+  db  255,1,125,133,53,85,149,21        ;e7 ;top right corner 
+  db  85,213,85,85,85,85,85,85          ;e8 ;2nd top line bottom right bit
+  db  64,128,0,0,0,0,0,0                ;e9 ;3rd top line bottom 2nd right bit
+  db  146,36,73,146,36,72,144,32        ;ea ;top horizontal line
+
+  db  201,228,242,249,252,254,255,255  ;eb   ;bottom triangle bit
+  db  21,149,85,53,133,125,1,255       ;ec ;bottom right corner
+  db  85,85,85,85,85,85,213,85         ;ed ;2nd bottom line bottom right bit
+  db  170,170,170,170,170,169,164,146  ;ee   ;bottom left corner
+  db  0,0,0,0,0,0,128,64               ;ef ;3rd top line bottom 2nd right bit
+  db  32,144,72,36,146,73,36,146       ;f0 ;bottom horizontal line
+
 
 
 ;END_PROGRAM

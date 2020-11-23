@@ -31,14 +31,15 @@
 
 ; maze constants
 ; --------------
-; the code for the wall must have bit 7 set whereas the other codes must have bit 7 reset.
+; the code for the wall must have bit 7 set whereas the other codes must have bit 7 reset except switch and exit
+;as we still need to draw a wall.
 
 _mw     equ  128   ;bin 10000000              ; wall.
 _mp     equ  32    ;bin 00100000              ; passageway.
 _me     equ  192   ;bin 11000000              ; exit.
 _sp     equ  32    ;bin 00100000              ; passageway.
-_mh     equ  129   ;bin 10000001              ;seperator or end wall
-_ms     equ  131   ;bin 11100000              ;switch            
+_mh     equ  129   ;bin 10000001              ; seperator or end wall
+_ms     equ  224   ;bin 11100000              ; switch     ($e0)        
 
 
 ; _mh - outside wall

@@ -530,14 +530,14 @@ bot_right_op3:    db 21,22,98,     $20,$7F,$7F;$20,$7F
 
 draw_switch_off:
                ; exit_closed 13 lines of 5 chars
-                ld b,13
+                ld b,12
                 ld hl,switch_off_g      ;start of switch off graphic
 abc_b1:          push bc
                 push hl
                 ld ix,hl                ;point to our data to print
                 CALL print_message
                 pop hl
-                ld de,9                 ;each line is 9 chars long
+                ld de,7                 ;each line is 9 chars long
                 add hl,de
                 ld ix,hl
                 pop bc
@@ -545,46 +545,45 @@ abc_b1:          push bc
           
 ;now colour the attributes to show switch is in the OFF position - colour it blue
                 ;do white colour bars first
-                ld hl,22764;22710-10+32+32   ;start of bar bit at the top of the door
+                ld hl,22764+32   ;start of bar bit at the top of the door
                 ld de,32            ;to jump 1 line down after each print
-                ld a,1              ;draw 9 attribute across
+                ld a,1              ;draw 1 attribute across
                 ld (att_count),a
                 ld a,184            ; colour to print (199=white)
                 ld c,a              ;set colour to white ink, black paper
-                ld a,6             ;do 16 lines
+                ld a,4             ;do 5 lines
                 call rept_5         ;colour our door correctly
                 
                 ret
 
 ;switch in off position
 switch_off_g:      ;13 lines
-                db 6,10,136, $80,$81,"#",$80,$81,$7F
-                db 7,10,136, $82,$83," ",$82,$83,$7F
-                db 8,10,136, $80,$81," ",$80,$81,$7F
-                db 9,10,136, $82,$83," ",$82,$83,$7F
-                db 10,10,136,$80,$81," ",$80,$81,$7F
-                db 11,10,136,$82,$83," ",$82,$83,$7F
-                db 12,10,136,$80,$81," ",$80,$81,$7F
-                db 13,10,136,$82,$83,"#",$82,$83,$7F
-                db 14,10,136,$80,$81,"#",$80,$81,$7F
-                db 15,10,136,$82,$83,"#",$82,$83,$7F
-                db 16,10,136,$80,$81,"#",$80,$81,$7F
-                db 17,10,136,$82,$83,"#",$82,$83,$7F
-                db 18,10,136,$80,$81,"#",$80,$81,$7F
+                db 6,11,158, $de,$dd,$e1,$7F
+                db 7,11,158, $e0," ",$e4,$7F
+                db 8,11,158, $e0," ",$e4,$7F
+                db 9,11,158, $e0," ",$e4,$7F
+                db 10,11,158,$e0," ",$e4,$7F
+                db 11,11,158,$e0," ",$e4,$7F
+                db 12,11,158,$e0,"|",$e4,$7F
+                db 13,11,158,$e0,"|",$e4,$7F
+                db 14,11,158,$e0,"|",$e4,$7F
+                db 15,11,158,$e0,"|",$e4,$7F
+                db 16,11,158,$e0," ",$e4,$7F
+                db 17,11,158,$df,$e3,$e2,$7F
 
 
 ;--------------------------------------------------------------------
 
 draw_switch_on:
                ; exit_closed 13 lines of 5 chars
-                ld b,13
+                ld b,12
                 ld hl,switch_on_g      ;start of switch off graphic
 abc_b2:          push bc
                 push hl
                 ld ix,hl                ;point to our data to print
                 CALL print_message
                 pop hl
-                ld de,9                 ;each line is 9 chars long
+                ld de,7                 ;each line is 9 chars long
                 add hl,de
                 ld ix,hl
                 pop bc
@@ -592,36 +591,171 @@ abc_b2:          push bc
           
 ;now colour the attributes to show switch is in the OFF position - colour it blue
                 ;do white colour bars first
-                ld hl,22924;22710-10+32+32+32+32+32+32+32   ;start of bar bit at the top of the door
+                ld hl,22924;+32      ;start of bar bit at the top of the door
                 ld de,32            ;to jump 1 line down after each print
-                ld a,1              ;draw 9 attribute across
+                ld a,1              ;draw 1 attribute across
                 ld (att_count),a
-                ld a,148            ; colour to print (199=white)
+                ld a,130            ; colour to print (199=white)
                 ld c,a              ;set colour to white ink, black paper
-                ld a,6             ;do 16 lines
+                ld a,4             ;do 5 lines
                 call rept_5         ;colour our door correctly
                 
                 ret
 
 ;switch in off position
-switch_on_g:      ;13 lines
-                db 6,10,136, "+","-","-","-","+",$7F
-                db 7,10,136, "|","|"," ","|","|",$7F
-                db 8,10,136, "|","|"," ","|","|",$7F
-                db 9,10,136, "|","|"," ","|","|",$7F
-                db 10,10,136,"|","|"," ","|","|",$7F
-                db 11,10,136,"|","|"," ","|","|",$7F
-                db 12,10,136,"|","#"," ","#","|",$7F 
-                db 13,10,136,"|","#"," ","#","|",$7F
-                db 14,10,136,"|","#"," ","#","|",$7F
-                db 15,10,136,"|","#"," ","#","|",$7F
-                db 16,10,136,"|","#"," ","#","|",$7F
-                db 17,10,136,"|","#"," ","#","|",$7F
-                db 18,10,136,"+","-","-","-","+",$7F
+switch_on_g:      ;12 lines
+                db 6,11,158, $de,$dd,$e1,$7F
+                db 7,11,158, $e0," ",$e4,$7F
+                db 8,11,158, $e0,"|",$e4,$7F
+                db 9,11,158, $e0,"|",$e4,$7F
+                db 10,11,158,$e0,"|",$e4,$7F
+                db 11,11,158,$e0,"|",$e4,$7F
+                db 12,11,158,$e0," ",$e4,$7F
+                db 13,11,158,$e0," ",$e4,$7F
+                db 14,11,158,$e0," ",$e4,$7F
+                db 15,11,158,$e0," ",$e4,$7F
+                db 16,11,158,$e0," ",$e4,$7F
+                db 17,11,158,$df,$e3,$e2,$7F
+;-----------------------------------------------------------------------------------
 
-draw_switch_right_closed:   ret
+draw_switch_right_off:
+   
+               ; exit_closed 14 lines of 7 chars
+                ld b,6
+                ld hl,switch_right_off
+abc_b3:         push bc
+                push hl
+                ld ix,hl        ;point to our data to print
+                CALL print_message
+                pop hl
+                ld de,7         ;7 chars to read
+                add hl,de
+                ld ix,hl
+                pop bc
+                djnz abc_b3
 
-draw_switch_right_open:   ret
+;draw top angled bit of the door on right wall
+                ld ix,top_right_1a        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_2a        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_3a        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_4a        ;point to our data to print
+                CALL print_message
+
+;draw bottom angled bit of the door on right wall
+                ld ix,bot_right_1a        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_2a        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_3a        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_4a        ;point to our data to print
+                CALL print_message
+
+;now colour the attributes correctly to look diagonal
+                ;do white colour bars first
+                ld hl,22710 +96       ;start of bar bit at the top of the door
+                ld de,32            ;to jump 1 line down
+                ld a,1              ;draw 1 attribute across
+                ld (att_count),a
+                ld a,184            ;set colour of switxch
+                ld c,a              ;set colour to white ink, black paper
+                ld a,4             ; # of lines to do
+                call rept_5         ;colour our door correctly
+                ret
+
+
+;top 2 parts of the switch
+top_right_1a:    db 5,22,158,    $e5,$e7,$7F
+top_right_2a:    db 6,21,158,$e5,$ea,$e8,$7F
+top_right_3a:    db 7,21,158,$e6,$e9,$e4,$7F
+top_right_4a:    db 8,21,158,$e0," ",$e4,$7F
+;middle of the OFF switch
+switch_right_off:     
+                db 9,21,158, $e0," ",$e4,$7F
+                db 10,21,158,$e0," ",$e4,$7F
+                db 11,21,158,$e0," ",$e4,$7F
+                db 12,21,158,$e0,"|",$e4,$7F
+                db 13,21,158,$e0,"|",$e4,$7F
+                db 14,21,158,$e0,"|",$e4,$7F
+
+;bottom 2 parts of the switch
+bot_right_1a:   db 15,21,158,$e0,"|",$e4,$7F
+bot_right_2a:   db 16,21,158,$ee,$ef,$e4,$7F
+bot_right_3a:   db 17,21,158,$eb,$f0,$ed,$7F
+bot_right_4a:   db 18,22,158,    $eb,$ec,$7F
+
+;--------------------------------------------------------------------------------
+
+draw_switch_right_on:   
+               ; exit_closed 14 lines of 7 chars
+                ld b,6
+                ld hl,switch_right_on
+abc_b4:         push bc
+                push hl
+                ld ix,hl        ;point to our data to print
+                CALL print_message
+                pop hl
+                ld de,7         ;7 chars to read
+                add hl,de
+                ld ix,hl
+                pop bc
+                djnz abc_b4
+
+;draw top angled bit of the door on right wall
+                ld ix,top_right_1b        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_2b        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_3b        ;point to our data to print
+                CALL print_message
+                ld ix,top_right_4b        ;point to our data to print
+                CALL print_message
+
+;draw bottom angled bit of the door on right wall
+                ld ix,bot_right_1b        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_2b        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_3b        ;point to our data to print
+                CALL print_message
+                ld ix,bot_right_4b        ;point to our data to print
+                CALL print_message
+
+;now colour the attributes correctly to look diagonal
+                ;do white colour bars first
+                ld hl,22710 +96+96+32       ;start of bar bit at the top of the door
+                ld de,32            ;to jump 1 line down
+                ld a,1              ;draw 1 attribute across
+                ld (att_count),a
+                ld a,130            ;set colour of switxch
+                ld c,a              ;set colour to white ink, black paper
+                ld a,4             ; # of lines to do
+                call rept_5         ;colour our door correctly
+                ret
+
+
+;top 2 parts of the switch
+top_right_1b:    db 5,22,158,    $e5,$e7,$7F
+top_right_2b:    db 6,21,158,$e5,$ea,$e8,$7F
+top_right_3b:    db 7,21,158,$e6,$e9,$e4,$7F
+top_right_4b:    db 8,21,158,$e0,"|",$e4,$7F
+;middle of the ON switch
+switch_right_on:     
+                db 9,21,158, $e0,"|",$e4,$7F
+                db 10,21,158,$e0,"|",$e4,$7F
+                db 11,21,158,$e0,"|",$e4,$7F
+                db 12,21,158,$e0," ",$e4,$7F
+                db 13,21,158,$e0," ",$e4,$7F
+                db 14,21,158,$e0," ",$e4,$7F
+
+;bottom 2 parts of the switch
+bot_right_1b:   db 15,21,158,$e0," ",$e4,$7F
+bot_right_2b:   db 16,21,158,$ee,$ef,$e4,$7F
+bot_right_3b:   db 17,21,158,$eb,$f0,$ed,$7F
+bot_right_4b:   db 18,22,158,    $eb,$ec,$7F
 
 
 

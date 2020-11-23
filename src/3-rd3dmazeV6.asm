@@ -377,7 +377,7 @@ draw_switch:
              ;are we facing south?
              ld a,(player_dir)
              sub 2                  ;2 = south
-             jr nz,check_east      ;if not check if switch is to our right hand side
+             jr nz,check_sw_east      ;if not check if switch is to our right hand side
              ld hl,(player_pos)
              ld de, $0010           ; (+16) to go to next line in front of us - south
              add hl,de
@@ -419,9 +419,9 @@ check_sw_east:
              ld a,(switch_pulled)
              and a
              jr nz,open_a           ;0=closed 1 = open
-             call draw_switch_right_closed
+             call draw_switch_right_off
              ret
-open_a:      call draw_switch_right_open         
+open_a:      call draw_switch_right_on        
              ret
 
 
