@@ -112,7 +112,7 @@ readnextreg:
         in a,(c)
         ret
 ;#################################################################################
-FlipULABuffers:
+FlipULABuffers: 
                 ; Flip ULA/Alt UA screen (double buffer ULA screen)
 
     ; if A==14, then do NR_69=64 (display Bank7), if A==10: NR_69=0 (display Bank5)
@@ -362,26 +362,38 @@ abcde:          push bc
                 add hl,de
                 ld ix,hl
                 pop bc
-                djnz abcde:
+                djnz abcde
+
+;now colour the attributes in the middle of the door to black paper, white text
+                ;do white colour bars first
+                ld hl,22749-32+5+7     ;start of bar bit at the top of the door
+                ld de,32            ;to jump 1 line down after each print
+                ld a,7              ;draw 1 attribute across
+                ld (att_count),a
+                ld a,165           ; colour to print (199=white)
+                ld c,a              ;set colour to white ink, black paper
+                ld a,14             ;do 15 lines
+                call rept_5         ;colour our door correctly
                 ret
+
 exit_open:    ;20 lines
                 db 3,6,191, $b1,$af,$af,$af,$af,$af,$af,$af,$af,$af,$af,$af,$b0,$7F
                 db 4,6,191, $20,$b1,$af,$af,$af,$af,$af,$af,$af,$af,$af,$b0,$20,$7F
                 db 5,6,191, $20,$20,$b1,$af,$af,$af,$af,$af,$af,$af,$b0,$20,$20,$7F
-                db 6,6,190, $20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 7,6,190, $20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 8,6,190, $20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 9,6,190, $20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 10,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 11,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 12,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 13,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 14,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 15,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 16,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 17,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 18,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
-                db 19,6,190,$20,$20,$20,$af,$af,$af,$af,$af,$af,$af,$20,$20,$20,$7F
+                db 6,6,190, $20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 7,6,190, $20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 8,6,190, $20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 9,6,190, $20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 10,6,190,$20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 11,6,190,$20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 12,6,190,$20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 13,6,190,$20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 14,6,190,$20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 15,6,190,$20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 16,6,190,$20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 17,6,190,$20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
+                db 18,6,190,$20,$20,$20,$f1,$f2,$f1,$f2,$f1,$f2,$f1,$20,$20,$20,$7F
+                db 19,6,190,$20,$20,$20,$f2,$f1,$f2,$f1,$f2,$f1,$f2,$20,$20,$20,$7F
                 db 20,6,191,$20,$20,$b2,$af,$af,$af,$af,$af,$af,$af,$b3,$20,$20,$7F
                 db 21,6,191,$20,$b2,$af,$af,$af,$af,$af,$af,$af,$af,$af,$b3,$20,$7F
                 db 22,6,191,$b2,$af,$af,$af,$af,$af,$af,$af,$af,$af,$af,$af,$b3,$7F
@@ -575,13 +587,16 @@ switch_off_g:      ;13 lines
 ;--------------------------------------------------------------------
 
 draw_switch_on:
+
                ; exit_closed 13 lines of 5 chars
                 ld b,12
                 ld hl,switch_on_g      ;start of switch off graphic
-abc_b2:          push bc
+abc_b2:         push bc
                 push hl
+ 
                 ld ix,hl                ;point to our data to print
                 CALL print_message
+ 
                 pop hl
                 ld de,7                 ;each line is 9 chars long
                 add hl,de
@@ -599,7 +614,17 @@ abc_b2:          push bc
                 ld c,a              ;set colour to white ink, black paper
                 ld a,4             ;do 5 lines
                 call rept_5         ;colour our door correctly
-                
+
+                ;check if the switch has pulled - if yes, dont play the sound again!
+                ld a,(switch_sound )
+                dec a               ;check if a = 0. Will be 255 if not zero
+                ret z 
+                ;do the switch on sound
+	            ld e,155		;10 for the walk sound
+                call walk_sound    
+                xor a
+                inc a
+                ld (switch_sound),a           
                 ret
 
 ;switch in off position
@@ -689,14 +714,19 @@ bot_right_4a:   db 18,22,158,    $eb,$ec,$7F
 
 ;--------------------------------------------------------------------------------
 
-draw_switch_right_on:   
-               ; exit_closed 14 lines of 7 chars
+draw_switch_right_on:
+
                 ld b,6
                 ld hl,switch_right_on
 abc_b4:         push bc
                 push hl
                 ld ix,hl        ;point to our data to print
                 CALL print_message
+;set border to flash
+           ;   ld c,254
+           ;   ld a,39       ;set a red border
+           ;   out (c),a
+
                 pop hl
                 ld de,7         ;7 chars to read
                 add hl,de

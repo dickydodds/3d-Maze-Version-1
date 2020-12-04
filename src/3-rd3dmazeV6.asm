@@ -375,6 +375,7 @@ draw_switch:
            ;  xor a                  ;make reg a zero to say no switch
            ;  ld (show_switch),a
              ;are we facing south?
+
              ld a,(player_dir)
              sub 2                  ;2 = south
              jr nz,check_sw_east      ;if not check if switch is to our right hand side

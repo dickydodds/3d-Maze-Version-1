@@ -14,7 +14,8 @@
 ;2019 - done a load of stuff!
 ;Oct 2020 - moved to SJASMPlus and implemented backbuffer
 ;Oct 19 2020 - added ULANext colours and removed maze printing routine that used ROM - implemented M/C one.
-;
+;Nov 23rd 2020 - got switch graphics working.
+;dec 4th 2020 - added rudimentary sound and got the maze exit transition working
 
 ;For SJASMPLUS
 
@@ -51,30 +52,15 @@
       
 main:           org 32768
 
+              ;  ld bc, $7ffd
+              ;  in a,(c)
+
 ;;; dont forget to create your character set on the next! ;;
 
 ;set the player direction based on keypress
 ; 0=north, 1=west, 2=south, 3=east
 
 start_game:    di       ;disable interrupts
-
-
-; set stack pointer in lower just before the _chars data
-
-       ; ld sp,64500 
-
-             
-           ; BREAK
-          ;  ld a,$69
-          ;  ld BC,$243b
-          ;  out (c),a
-          ;  ld bc,$253b
-           ; Ld a,%10
-          ;  in a,(c)
-
-     ;       ld a,$43
-     ;       call ReadNextReg
-     ;       ;a holds the value        
 
 ;first, clear the 2 ULA bank screens as they are at ROM location 0
                           
@@ -114,6 +100,25 @@ a_map:
               ld (player_pos),hl
                     
 main_loop:
+
+
+;set border to black - the beep sound makes it red so cant use this :(
+              ld c,254
+            ;  ld a,39  ;black
+              ld a,64
+              out (c),a
+;0=red
+;32=red
+;34 purple
+;64 = red
+;254 = off white
+;244 cyan
+;234 purple
+;224 red
+;214 whitish
+;204 cyan
+;203 purple
+
 ;set CPU Speed
               ;set CPU Speed Mhz
               ;0 = 3.5
@@ -125,6 +130,8 @@ main_loop:
            ;   ;put standard printing back to black text & white paper
            ;   ld a,98
            ;   ld (att),a
+
+    
 
               call clear_char_screen    ;clear screen @c000
 
@@ -158,6 +165,7 @@ main_loop:
               ;we need to copy the colours to an alternate memory screen then copy them back to the main screen
               ;we do this because we use the alternate colour screen when we transition between levels
               call draw_colours     ;colourise the display but store at address 'attr_screen'
+              
               call copy_colours     ;copy colour map to screen 
 
               ;make sure we point to our character set
@@ -167,8 +175,8 @@ main_loop:
 
 ;------------------------------------------------------------------------
               ;see if we need to draw the door or switch
-    ;ld a,1
-    ;ld (switch_pulled),a
+    ld a,1
+    ld (switch_pulled),a
         
               call draw_door        ;see if we need to draw a door
               call draw_switch     ;see if we need to draw a switch
@@ -176,8 +184,14 @@ main_loop:
 ;setup right hand side of the screen
               call draw_screen_right
 
+              ;do the walking sound
+	          ld e,10		;10 for the walk sound
+              call walk_sound
+
               ;now flip the screen into the visible screen
               call FlipULABuffers_peter
+
+
 
 ;set CPU Speed
               ;set CPU Speed Mhz
@@ -208,13 +222,11 @@ main_loop:
 ;speed of game set here
 ;######################################
 
-                call pause      ;slow down the game here
+              call pause         ;slow down the game here
 
 wait4key:
               call get_keys      ;keypress in C register
-
               ld a,c
-              
               or a               ;clear flags
               jp z,wait4key      ;wait for a keypress b4 continuing
 
@@ -229,26 +241,29 @@ wait4key:
               ld (map_show),a
               ld a,b              ;now carry on :)
 
-              cp 16              ; 8 (right) pressed
+              cp $20;16              ; 8 (right) pressed
               jp z,plus
         
-key_6         cp 8               ;6 (down) pressed
+key_x         cp 1;8               ;x pressed. (old) 8=6 (down) pressed
               jp nz, comp_4      ;carry on if not pressed otherwise return to BASIC
-              nextreg $43,0      ;turn off ulanext
+              nextreg $43,$0E      ;turn off ulanext
               nextreg $69,0      ;turn off ula banking
               NEXTREG $50,$FF
-              NEXTREG $52,$0A        
-              ld iy,$5c3a
+              NEXTREG $52,$0A 
+              ld bc,$7ffd
+              ld a, $ff
+              out (c),a
+   
+            ;  ld iy,$5c3a
               ei
               ret                ;return to BASIC
    
-comp_4:       cp 4               ;7 (forward) pressed
+comp_4:       cp 8;4               ;7 (forward) pressed
               jp z,move_forward
            
-              cp 2               ; 5 (left) pressed
+              cp 4;2               ; 5 (left) pressed
               jp z,minus
 
- ;             cp 1               ;0 PRESSED
               ;0 was pressed or we never get here!
               xor b             ;make b zero
               ld a,(map_show)
@@ -326,23 +341,25 @@ move_forward:
            ; reset the switch pulled back to off position
             xor a
             ld (switch_pulled),a
+            
+;reset switch sound variable
+            ld (switch_sound ),a
+
 ;need to set the player start position now.              
 
-            ld a,(cur_map)
-            dec a               ;point to our next map  
-            call set_map      ;set our map
-            ld l,01              ;top left of maze
-            ld (player_pos),hl
+ ;           ld a,(cur_map)
+ ;           dec a               ;point to our next map  
+ ;           call set_map      ;set our map
+ ;           ld l,01              ;top left of maze
+ ;           ld (player_pos),hl
 
 ;draw exit animation
-        ;    nextreg $69,0           ;turn off paging
             ;we moved forward and overwrote the door so redraw it
             nextreg 7,3             ;set cpu speed to max
          ;   call draw_exit_door_open
+
             call exit_anim
 
-         ;   call new_maze_anim
-         ;   nextreg $69,64          ;turn on paging
             jp main_loop          ;jump to our next level
 ;--------------------------------------------------------------------------------
 cont_a:      
@@ -415,10 +432,6 @@ move_1:       cp 16                 ;are we at the top edge of the maze?
 ;we are at the TOP of the maze so dont saaveour addition to HL
               jp main_loop          ;continue to the game loop
 
-                        
-;move_back:
- ;             jp main_loop
-
 ;##########################################################################
 ;Pause routine for slowing down the game
 
@@ -426,7 +439,7 @@ pause:        push hl
               push bc
               ld b,1           ;delay loop
 loop19:       ;halt             ;no interrupts!
-              ld hl,12192
+              ld hl,10000
 abc:          dec hl
               ld a,h
               dec a
@@ -494,7 +507,7 @@ get_keys:
  ;values in KEYTAB
  ;
 readke  ld   hl,keytab
-        ld   bc,$0500
+        ld   bc,$0600
  ;
  ;5 keys to read
  ;
@@ -580,13 +593,27 @@ keyadd dw 63486,64510,65022,65278,61438,57342,49150,32766
  ;    Q = 1*8+0
  ;    4 = 0*8+3
  ;
-keytab db 0*8+4,4*8+4,4*8+3,4*8+2,4*8+0
- ;           5      6     7      8   0
+keytab db 0*8+4, 4*8+4, 4*8+3, 4*8+2, 4*8+0, 3*8+2
+ ;           5     6     7      8       0     X
+
+ ;old bit values before adding the x key
  ;;bit values: 1 = 0 fire
  ;             2 = 8 right
  ;             4 = 7 up
  ;             8 = 6 down
  ;            16 = 5 left
+;new key table
+;;bit values:  
+ ;             1 = x
+ ;             2 =  0 fire
+ ;             4 = 5 left
+ ;             8 =  7 up
+ ;             16 = 6 down
+ ;             32 =  8 right
+
+
+
+
 
 ; keytab db 5*8+1,5*8+0,2*8+1,3*8+2,7*8+0
  ;
@@ -626,6 +653,34 @@ loop3   inc h                   ; times by 256
         ld a, h
         ld (maze_highbyte),a
         ret
+
+;#################################################################
+;walking sound
+
+walk_sound: 
+
+zap:
+        push de
+        push bc
+	    ld d,16		;speaker = bit 4
+;e is set when the routine is called so we make different sounds for switch and footwalk
+;	    ld e,10		;distance between speaker move counter
+	    ld b,250 	;overall length counter
+blp0:	ld a,d
+	    and 248		;keep border colour the same
+	    out (254),a	;move the speaker in or out depending on bit 4
+	    cpl		    ;toggle, so we alternative between speaker in and out to make sound
+	    ld d,a		;store it
+	    ld c,e		;now a pause
+blp1:	dec c
+	    jr nz,blp1
+	   ; dec e		;change to inc e to reverse the sound, or remove to make it a note
+	    djnz blp0	;repeat B=255 times
+        pop bc
+        pop de
+	    ret
+	;
+	
 
 ;#################################################################
 ;Character screen reservation
@@ -814,6 +869,7 @@ show_exit       db 0 ;used to say whether to draw the full size exit door or not
                      ;1 = draw an open exit door
 switch_pulled   db  0 ; 0 and 1 for on and off - default off
 sp_store        dw  0   ;save and restore the SP
+switch_sound    dw 0    ;shows if switch sound already sounded = 0=no, 1=yes
 
 ;#############################################################
 ;reserve 200 bytes for the stack - points here from BASIC
@@ -991,6 +1047,9 @@ _chars:
   db  170,170,170,170,170,169,164,146  ;ee   ;bottom left corner
   db  0,0,0,0,0,0,128,64               ;ef ;3rd top line bottom 2nd right bit
   db  32,144,72,36,146,73,36,146       ;f0 ;bottom horizontal line
+
+  db   0,0,0,0,32,0,0,1                ;f1 ;stars for the inside of the closed door
+  db   0,8,0,0,0,0,0,0                 ;f2 ;stars for the inside of the closed door
 
 
 
