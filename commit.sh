@@ -1,7 +1,8 @@
 git add .
 echo Unter your update message
 read mesg
-echo git commit -m mesg
+echo $mesg
+echo git commit -m \\"$mesgi\\"
 git push
 
 #dickydodds

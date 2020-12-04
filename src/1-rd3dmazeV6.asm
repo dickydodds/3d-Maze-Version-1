@@ -433,7 +433,7 @@ abc_a:          push bc
                 CALL print_message
                 ld ix,bot_right_4        ;point to our data to print
                 CALL print_message
-           ; BREAK
+          
 ;now colour the attributes correctly to look diagonal
                 ;do white colour bars first
                 ld hl,22710         ;start of bar bit at the top of the door

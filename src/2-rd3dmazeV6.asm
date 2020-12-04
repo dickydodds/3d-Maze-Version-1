@@ -9,8 +9,20 @@
 
 ;will need to change DF_CC position for sjasmplus
 DRAW_MAP:
+
         ;set max speed!
         nextreg 7,3
+
+        ;turn off the buffering so we 
+        nextreg $52,10      ;page in the spectrum screen  
+        ;now redraw our current screen in case we need to as we draw the map over the top
+            call redraw_screen
+            call copy_colours  
+            call draw_screen_right
+            ld hl,charset_1-256
+            ld (base),hl
+            call compass          ; draw compass
+
 
         ;set our colours
         ld a,178            ;red
@@ -155,6 +167,13 @@ rep3:   push af
         pop af
         dec a
         jr nz,rep3        ;exit when a=0
+
+        nextreg $69,0       ;turn off screen buffering so we write directly to the screen 
+        ld a,14
+        ld (ULABank),a    ;tell the flip ula routine which page is being viewed
+        ;set min speed!
+        nextreg 7,0
+  
         ret
 
        
@@ -171,9 +190,7 @@ rep3:   push af
 ;               a  = attr (b,c)
 ;   df_cc is altered       
 
-               
 
-   ; BREAK
 locate: ld a,b
         and $18
         ld h,a           
@@ -284,10 +301,6 @@ setbase:
         push af
         push bc
         push hl
-;        ld a,$3c                ;point to spectrum rom
-;        ld (base+1),a
-;        sub a                   ; make zero
-;        ld (base),a
 
 ;point to our character set
         ld hl,charset_1
@@ -310,25 +323,11 @@ ret_1   pop hl
 
         ret
         
-my_print:
+my_print:           ;bc=line,col
 lp4:    ld b,0
         ld c,0 
-;        ld a,120
-        
-;        ld (att),a
         call locate ; set print pos and attribute
-        ;call cls - clear the screen
-        
-        ;loop 24 times
-        ;ld a,2
-        ;push af
-        
-        ; set base pointer to  character set
-        ; starts at space char code 0
-  ;      ld hl,(base) 
-        ;ld (base),hl
-        sub a
-      ;make reg a=0
+        sub a       ;make reg a=0
         ld (lc),a   ;line counter
     
         ; remember, print1 preserves the c register

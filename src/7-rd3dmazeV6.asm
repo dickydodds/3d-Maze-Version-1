@@ -1,15 +1,19 @@
 ;this is the maze data and colour exit routine
+;also the screen char memory and colours
+;exit animation logic
+;sound routine
+
 
 ;##########################################################
 ;maze data
 
-        org $a300   ;41728
+        org $a300   
 
 ;################################################################
 ; maze data
 ;################################################################
 
-; the maze lies on a page boundary, allowing the code to check only the low byte of its address.
+; the maze lies on a 256 byte page boundary, allowing the code to check only the low byte of its address.
 ; the maze is 18 positions north-to-south (rows 0 to 17) and 16 positions west-to-east (columns 0 to 15).
 ;
 ;    n
@@ -20,10 +24,6 @@
 ;
 ; key: x=wall, space=passageway, e=exit.
 
-
-   ;   org 34288 ;($85F0) for maze start
-
-       ; org 28928               ;$7100 256 byte boundary
 
 ;#####################################################################################
 ;This is our 16 Maze's maze data = numbered 0 to 15
@@ -378,26 +378,22 @@ map_15:
         nop
         nop
 
+;#################################################################
+;Character screen reservation
+        org $c000
+       ; org $E600
 
+char_screen:   block 768    ;view screen built here from characters
+
+attr_screen:   block 768    ;colours held here for door animation
+
+;################################################
 ;##################################################################################
 ;door exit animation
-;the idea here is that the following will happen when you reach the exit:-
-;    0 turn off the buffer screen via reg $69
-;    1 draw a black box growing ever bigger to fill the screen - thats exit_anim routine
-;    2 leave that screen on show
-;    3 point to the buffer screen
-;    4 draw the first screen of the next level - unless its the last level (level 255 when you finish the game!)    
-;    5 copy the attributes to a place in memory - probably after the char screen at $c000
-;    6 switch the buffer screen back on via reg $69
-;    7 make all the buffer screen colours black
-;    8 switch in the buffer screen
-;    9 turn off the buffer screen because we want to see the colours materialise!
-;    9 draw the colours back in from the copied colours earlier but from the outside in - new_maze_anim routine
-;    10 go back to normal!
 ;
 ;   if A==10: NR_69=0 (display Bank5)
 exit_anim:
-          ;  BREAK
+
 ;first, make the REAL spectrum screen shows our exit door as we need to write to the screen LIVE 
 
             nextreg $52,10      ;select the real spectrum screen
@@ -422,13 +418,19 @@ exit_anim:
 
             ld a,(cur_map)
             dec a               ;point to our next map  
+            ld (game_exit),a
+            ret z
             call set_map      ;set our map
+
+
+;need to exit to BASIC if we exit map_0
+         ;   sub 255              ;a will = 255 if exit map 0 - the end game
+         ;   ret z               ;exit the routine
+                        
             ld l,01              ;top left of maze
             ld (player_pos),hl
      
-;need to make the screen black, draw ink bits, copy colours to somewhere else then copy back
 
-          ;  nextreg $69,64       ;turn ON screen buffering so we write directly to the ALTERNATE screen our new maze start
             call redraw_screen
             call new_maze_anim
             call pause
@@ -451,6 +453,8 @@ redraw_screen:
               call draw_colours         ;colourise the display
               ret
 ;end drawing the new screen
+
+
 ;----------------------------------------------------------------------------------
 ;draw a load of black boxes to hide the current screen. We then call part of this routine again to draw in the correct
 ;colours to the new level - supposed to look cool lol!
@@ -492,9 +496,6 @@ d_box1:	    ;play some sound
            	ld de,65504         ; 65504  (-32)
 
             add hl,de           ;next box to draw
-         ;   call pause
-         ;   call pause
-
             ld a,(size1)     ; increase the size of the square to draw
             inc a
             inc a
@@ -595,8 +596,8 @@ cur_page   db 0   ;hold the current screen thats paged in view for the exit scre
 ;###########################################################################
 
 new_maze_anim:
-
-               nextreg 7,1
+              call draw_screen_right
+              nextreg 7,1
               ld a,10
               ld (sound_byte),a
         
@@ -665,4 +666,31 @@ Loop_col:
     jp pe,Loop_col  ; Loop until bc = zero           
 
               ret
+
+;#################################################################
+;walking sound
+
+walk_sound: 
+
+zap:
+        push de
+        push bc
+	    ld d,16		;speaker = bit 4
+;e is set when the routine is called so we make different sounds for switch and footwalk
+;	    ld e,10		;distance between speaker move counter
+	    ld b,250 	;overall length counter
+blp0:	ld a,d
+	    and 248		;keep border colour the same
+	    out (254),a	;move the speaker in or out depending on bit 4
+	    cpl		    ;toggle, so we alternative between speaker in and out to make sound
+	    ld d,a		;store it
+	    ld c,e		;now a pause
+blp1:	dec c
+	    jr nz,blp1
+	   ; dec e		;change to inc e to reverse the sound, or remove to make it a note
+	    djnz blp0	;repeat B=255 times
+        pop bc
+        pop de
+	    ret
+	;
       

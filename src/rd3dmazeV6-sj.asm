@@ -15,7 +15,10 @@
 ;Oct 2020 - moved to SJASMPlus and implemented backbuffer
 ;Oct 19 2020 - added ULANext colours and removed maze printing routine that used ROM - implemented M/C one.
 ;Nov 23rd 2020 - got switch graphics working.
-;dec 4th 2020 - added rudimentary sound and got the maze exit transition working
+;dec 2nd 2020 - added rudimentary sound and got the maze exit transition working
+;dec 4th 2020 - exit to basic done when you exit level 0
+
+
 
 ;For SJASMPLUS
 
@@ -52,11 +55,6 @@
       
 main:           org 32768
 
-              ;  ld bc, $7ffd
-              ;  in a,(c)
-
-;;; dont forget to create your character set on the next! ;;
-
 ;set the player direction based on keypress
 ; 0=north, 1=west, 2=south, 3=east
 
@@ -91,7 +89,7 @@ start_game:    di       ;disable interrupts
               
 ;start on maze map 0
 a_map:
-              ld a,6            
+              ld a,2            
               call set_map      ;set our map
 
 ;              ld h,$71          ;set at maze 1 bottom maze
@@ -103,10 +101,10 @@ main_loop:
 
 
 ;set border to black - the beep sound makes it red so cant use this :(
-              ld c,254
+           ;   ld c,254
             ;  ld a,39  ;black
-              ld a,64
-              out (c),a
+            ;  ld a,64
+            ;  out (c),a
 ;0=red
 ;32=red
 ;34 purple
@@ -124,14 +122,12 @@ main_loop:
               ;0 = 3.5
               ;1 = 7 
               ;2 = 14 
-              ;4 = 28
+              ;3 = 28
               nextreg 7,1
 
-           ;   ;put standard printing back to black text & white paper
-           ;   ld a,98
-           ;   ld (att),a
-
-    
+              ;put standard printing back to black text & white paper
+            ;  ld a,98
+            ;  ld (att),a
 
               call clear_char_screen    ;clear screen @c000
 
@@ -159,12 +155,14 @@ main_loop:
               call draw_side_walls
           
               ;draw screen at mem location 0000
-              ;my print used to print screen @c000 to 16384 inc udg's  
+              ;my print used to print screen @c000 to 16384 inc udg's 
+
               call my_print         ;copy to screen from c000
             
               ;we need to copy the colours to an alternate memory screen then copy them back to the main screen
               ;we do this because we use the alternate colour screen when we transition between levels
-              call draw_colours     ;colourise the display but store at address 'attr_screen'
+ 
+             call draw_colours     ;colourise the display but store at address 'attr_screen'
               
               call copy_colours     ;copy colour map to screen 
 
@@ -253,8 +251,12 @@ key_x         cp 1;8               ;x pressed. (old) 8=6 (down) pressed
               ld bc,$7ffd
               ld a, $ff
               out (c),a
-   
-            ;  ld iy,$5c3a
+              ld hl, $535c          ;restore this sysvar
+              ld (hl),0
+              ld hl, $5b67          ;restore this sysvar
+              ld (hl),0
+              ld iy,$5c3a
+
               ei
               ret                ;return to BASIC
    
@@ -274,12 +276,9 @@ comp_4:       cp 8;4               ;7 (forward) pressed
               push hl 
             
               ld (map_show),a   ;save that we have pressed 6 - reg a = 1
-              ld a,(ULABank)            
-         ;     NEXTREG $52,a    ;page in the proper ULA screen but dont display it unless 
-                                ;already displayed.             
-              CALL clsULA       ;clear the hidden ULA Screen as it shows old data
+
               CALL DRAW_MAP
-              call FlipULABuffers
+
               pop hl
 
               jp wait4key           
@@ -345,7 +344,7 @@ move_forward:
 ;reset switch sound variable
             ld (switch_sound ),a
 
-;need to set the player start position now.              
+;need to set the player start position now.  - MOVED TO EXIT_ANIM ROUTINE            
 
  ;           ld a,(cur_map)
  ;           dec a               ;point to our next map  
@@ -356,11 +355,21 @@ move_forward:
 ;draw exit animation
             ;we moved forward and overwrote the door so redraw it
             nextreg 7,3             ;set cpu speed to max
-         ;   call draw_exit_door_open
 
             call exit_anim
 
-            jp main_loop          ;jump to our next level
+;**********************************************************************  
+;GAME EXIT CHECK  
+;check if we got past level 0 - if so exit to BASIC
+            ld a,(game_exit)
+            cp 0
+            ret z
+;**********************************************************************
+
+            ;now flip the screen into the visible screen
+            call FlipULABuffers_peter
+
+            jp wait4key             ;screen is already drawn so dont draw it again.
 ;--------------------------------------------------------------------------------
 cont_a:      
 ;1st, check if we are trying to flick the switch on
@@ -456,13 +465,16 @@ abc:          dec hl
 
 ;for SJASMPLUS
 
-    INCLUDE 1-rd3dmazeV6.asm  ; init and maze itself
-    INCLUDE 2-rd3dmazeV6.asm ; draw maze on screen, player direction,
+    INCLUDE "1-rd3dmazeV6.asm"  ; init and maze itself
+    INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
     INCLUDE "3-rd3dmazeV6.asm" ; check walls in front of player
     INCLUDE "4-rd3dmazeV6.asm" ; draw left side of maze
     INCLUDE "5-rd3dmazeV6.asm" ; draw wall in front of player+setup right part of screen
     INCLUDE "6-rd3dmazeV6.asm" ; draw right side of maze
+    include 7-rd3dmazeV6.asm    ;the maze itself and other routines
 
+;moved 2 to here as it was causing a memory overwrite.
+  ;  INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
 ;#####################################################
 
 
@@ -654,40 +666,15 @@ loop3   inc h                   ; times by 256
         ld (maze_highbyte),a
         ret
 
-;#################################################################
-;walking sound
 
-walk_sound: 
-
-zap:
-        push de
-        push bc
-	    ld d,16		;speaker = bit 4
-;e is set when the routine is called so we make different sounds for switch and footwalk
-;	    ld e,10		;distance between speaker move counter
-	    ld b,250 	;overall length counter
-blp0:	ld a,d
-	    and 248		;keep border colour the same
-	    out (254),a	;move the speaker in or out depending on bit 4
-	    cpl		    ;toggle, so we alternative between speaker in and out to make sound
-	    ld d,a		;store it
-	    ld c,e		;now a pause
-blp1:	dec c
-	    jr nz,blp1
-	   ; dec e		;change to inc e to reverse the sound, or remove to make it a note
-	    djnz blp0	;repeat B=255 times
-        pop bc
-        pop de
-	    ret
-	;
 	
 
 ;#################################################################
 ;Character screen reservation
-        org $c000
-char_screen:   block 768    ;view screen built here from characters
+ ;       org $c000
+;char_screen:   block 768    ;view screen built here from characters
 
-attr_screen:   block 768    ;colours held here for door animation
+;attr_screen:   block 768    ;colours held here for door animation
 
 ;################################################
 
@@ -796,7 +783,7 @@ charset_1:
 
 
 
-    include 7-rd3dmazeV6.asm    ;the maze itself and other routines
+  ;  include 7-rd3dmazeV6.asm    ;the maze itself and other routines
  
 ;##############################################
 ;misc data
@@ -859,17 +846,18 @@ w5_start dw 0        ;not used
 cur_map  db 0        ;stores current map to draw or show           
 map_start dw 0       ;tores the map start address
 
-furthest_point dw 0 ;store the address of the furthest point
-                    ;we can see in the maze from our position.
-blockid  db 0        ;stores  block position of layer 5 for wall drawing
-maze_highbyte db $71 ;holds high byte of current maze in use
-map_show    db  0    ;tells is if we are already showing the map
-show_exit       db 0 ;used to say whether to draw the full size exit door or not
-                     ;0 = draw a closed exit door
-                     ;1 = draw an open exit door
+furthest_point dw 0   ;store the address of the furthest point
+                      ;we can see in the maze from our position.
+blockid  db 0         ;stores  block position of layer 5 for wall drawing
+maze_highbyte db $71  ;holds high byte of current maze in use
+map_show    db  0     ;tells is if we are already showing the map
+show_exit       db 0  ;used to say whether to draw the full size exit door or not
+                      ;0 = draw a closed exit door
+                      ;1 = draw an open exit door
 switch_pulled   db  0 ; 0 and 1 for on and off - default off
 sp_store        dw  0   ;save and restore the SP
 switch_sound    dw 0    ;shows if switch sound already sounded = 0=no, 1=yes
+game_exit       db  0   ;set to 255 if we need to exit the game as we got passed level 0
 
 ;#############################################################
 ;reserve 200 bytes for the stack - points here from BASIC
@@ -885,7 +873,7 @@ stack_p        block 200
         org 64512  
 													
 ;##############################################
-      ;UDG Characher Defs											
+      ;UDG Charachter Defs											
 ;##############################################							
 _chars:
  db	72,75,151,147,137,68,36,18      ;80	65080	;door wood effect 1	
