@@ -1,4 +1,4 @@
-﻿#CSpect V2.12.37 ZXSpectrum emulator by Mike Dailly
+﻿#CSpect V2.13.00 ZXSpectrum emulator by Mike Dailly
 (c)Copyright 1998-2020 All rights reserved
 
 Be aware...emulator is far from well tested, and might crash for any reason - sometimes just out of pure spite!
@@ -8,6 +8,33 @@ NOTE: DISTRIBUTION WITH COMMERCIAL TITLES IS NOT PERMITTED WITHOUT WRITTEN CONSE
 
 Whats new
 ======================================================================================
+v2.13.00
+--------
+Fixed a bug in the rewind of MMUs
+Swapped to 2.13 coz I was bored of 12.??
+
+
+v2.12.39
+--------
+Fixed physical breakpoints in the plugins
+(Highly) Experiminetal "rewind" debugger feature. Simply press SHIFT+F7 to step back.
+         Currently tracks all RAM access and Sprite port access.
+		 There's bound to be HEAPs of issues and bugs with this, but for simple debugging, 
+		 it should be fine.
+Added UnStep in plugin system
+Added "REWIND" debugger command, to allow you to switch the CPU history on/off dynamically
+Added Debugger message display. Now reports errors when you use a non-existant label etc.
+
+
+v2.12.38
+--------
+Added NextRegs $2C and $2E (DAC mirrors)
+DMA read flags (Bit 5 and Bit 1) added and fixed.
+Added "_" to BASIC key detection
+I "think" I've fixed the stuck BASIC mode keys (where : just gets stuck and repeats....)
+Added OpenAL32.dll to the zip.... turns out that's allowed.
+on loading of a NEX file, NextRegs are set to what the OS NexLoad sets
+
 v2.12.37
 --------
 RAM is now filled with random bytes on power up to help simulate the real machine

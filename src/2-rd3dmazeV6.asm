@@ -3,11 +3,8 @@
 ;Draw the current map on screen
 ;##############################################
 
-    ;    org $E000   ; 57344 - top 8k
-
 ;max row=21, max column = 31
 
-;will need to change DF_CC position for sjasmplus
 DRAW_MAP:
 
         ;set max speed!
@@ -15,6 +12,9 @@ DRAW_MAP:
 
         ;turn off the buffering so we 
         nextreg $52,10      ;page in the spectrum screen  
+
+;       nextreg $69,0       ;turn off screen buffering so we write directly to the screen 
+ 
         ;now redraw our current screen in case we need to as we draw the map over the top
             call redraw_screen
             call copy_colours  
@@ -23,7 +23,7 @@ DRAW_MAP:
             ld (base),hl
             call compass          ; draw compass
 
-
+map_from_Basic: ;called from Basic Mapmaker
         ;set our colours
         ld a,178            ;red
         ld (wallcol),a

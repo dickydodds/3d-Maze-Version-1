@@ -74,7 +74,7 @@ _layer5leftbottom       equ  $9c  ;layer 5 bottom left chevron
 ;clear the character maze in memory 
 ;============================================
 
-clear_char_screen:
+clear_char_screen: 
 
         ld hl,$c000
         ld bc,790;767
@@ -88,11 +88,11 @@ clear_char_screen:
      
 clsULA:                 ;Clear Ula Buffer:
     ld  hl,$0000
-    ld  de,$0001
-    ld  bc,$1800
-    ld  (hl),l
+    ld  de,1;$0001
+    ld  bc,$17ff
+    ld  (hl),0
     ldir
-    ld  (hl),240    ;black was $48    ; black paper, cyan ink
+    ld  (hl),0;240    ;black was $48    ; black paper, cyan ink
     ld  bc,$02FF
     ldir
     ret                                   
@@ -231,7 +231,8 @@ message_level         db 15,25,87," LEVEL ",$7f
 
 Setup_palette:
 
-       nextreg $43,%00000001   ; Set ULANext palette ON
+;       nextreg $43,%00000001   ; Set ULANext palette ON
+       nextreg $43,%01000011   ; Set ULANext palette ON, change 2nd ula palette and use 2nd palette
        nextreg $40,%00000000    ; set index to 0 which = start of palette  
        nextreg $42,%00000001   ; Set 2 ink & 254 paper
 

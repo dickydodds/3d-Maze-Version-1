@@ -27,10 +27,14 @@ namespace Plugin
         Step,
         /// <summary>Step over (only in debug mode)</summary>
         StepOver,
+        /// <summary>Rewind the CPU one instruction</summary>
+        UnStep,
         /// <summary>Set a breakpoint [0 to 65535]</summary>
         SetBreakpoint,
         /// <summary>Clear a breakpoint [0 to 65535]</summary>
         ClearBreakpoint,
+        /// <summary>Clears ALL logical, physical and read/write breakpoints</summary>
+        ClearAllBreakpoints,
         /// <summary>Get a breakpoint [0 to 65535], returns 0 or 1 for being set</summary>
         GetBreakpoint,
         /// <summary>Set a breakpoint in physical memory[0 to 0x1FFFFF]</summary>

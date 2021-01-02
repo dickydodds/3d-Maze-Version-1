@@ -307,7 +307,7 @@ map_14:
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;1
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;2
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;3
- db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;4
+ db _mh, _mp, _ms, _ms, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;4
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;5
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;6
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;7
@@ -326,7 +326,7 @@ map_15:
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;2
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;3
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;4
- db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;5
+ db _mh, _me, _ms, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;5
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;6
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;7
  db _mh, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp, _mp ;8
@@ -341,47 +341,60 @@ map_15:
 
 ;map start positions
 
+player_start_pos:   ;was map_start_pos
 ;map0   
-        dw  00
+        dw  map_0+2      ; start location
+        db  2       ; Direction Indicator
 ;map1   
-        dw  00
+        dw  map_1+1      ; start location
+        db  2       ; Direction Indicator
 ;map2   
-        dw  00
+        dw  map_2+1      ; start location
+        db  2       ; Direction Indicator
 ;map3   
-        dw  00
+        dw  map_3+1      ; start location
+        db  2       ; Direction Indicator
 ;map4   
-        dw  00
+        dw  map_4+1      ; start location
+        db  2       ; Direction Indicator
 ;map5   
-        dw  00
+        dw  map_5+1      ; start location
+        db  2       ; Direction Indicator
 ;map6   
-        dw  00
+        dw  map_6+1      ; start location
+        db  2       ; Direction Indicator
 ;map7   
-        dw  00
+        dw  map_7+1      ; start location
+        db  2       ; Direction Indicator
 ;map8   
-        dw  00
+        dw  map_8+1      ; start location
+        db  2       ; Direction Indicator
 ;map9   
-        dw  00
+        dw  map_9+1      ; start location
+        db  2       ; Direction Indicator
 ;map10   
-        dw  00
+        dw  map_10+1      ; start location
+        db  2       ; Direction Indicator
 ;map11  
-        dw  00
+        dw  map_11+1      ; start location
+        db  2       ; Direction Indicator
 ;map12  
-        dw  00
+        dw  map_12+1      ; start location
+        db  2       ; Direction Indicator
 ;map13  
-        dw  00
+        dw  map_13+1      ; start location
+        db  2       ; Direction Indicator
 ;map14  
-        dw  00
+        dw  map_14+1      ; start location
+        db  2       ; Direction Indicator
 ;map15  
-        dw  00
+        dw  map_15+1      ; start location
+        db  2       ; Direction Indicator
 
-        nop
-        nop
-        nop
 
 ;#################################################################
 ;Character screen reservation
         org $c000
-       ; org $E600
 
 char_screen:   block 768    ;view screen built here from characters
 
@@ -397,6 +410,7 @@ exit_anim:
 ;first, make the REAL spectrum screen shows our exit door as we need to write to the screen LIVE 
 
             nextreg $52,10      ;select the real spectrum screen
+
             ;now redraw our current screen
             call redraw_screen
             call copy_colours
@@ -419,17 +433,14 @@ exit_anim:
             ld a,(cur_map)
             dec a               ;point to our next map  
             ld (game_exit),a
-            ret z
-            call set_map      ;set our map
-
 
 ;need to exit to BASIC if we exit map_0
-         ;   sub 255              ;a will = 255 if exit map 0 - the end game
-         ;   ret z               ;exit the routine
-                        
-            ld l,01              ;top left of maze
-            ld (player_pos),hl
-     
+            ld bc,0             ;set bc to 0 to indicate we hit the last level and need to return to BASIC
+            jp z,ret_to_basic
+            ld bc,1             ;set bc to non ZERO to indicate we do NOT need to return to BASIC
+           
+            call set_map            ;set our map
+            call set_map_start_pos  ;set the player start position and direction
 
             call redraw_screen
             call new_maze_anim
@@ -441,7 +452,7 @@ exit_anim:
             ret                 ;return to normal game
 ;------------------------------------------------------------------------------------------
 redraw_screen:
-              call clear_char_screen    ;clear screen @c000
+              call clear_char_screen    ; clear screen @c000
               call get_distance         ; get distance we can see
               call draw_left_side       ; start drawing the left side of the 
               call get_distance         ; get distance we can see
@@ -454,6 +465,21 @@ redraw_screen:
               ret
 ;end drawing the new screen
 
+;------------------------------------------------------------------------------------------
+;This routine for use from BASIC maze designer program
+redraw_screen_no_colours:
+              call clear_char_screen    ; clear screen @c000
+              call get_distance         ; get distance we can see
+              call draw_left_side       ; start drawing the left side of the 
+              call get_distance         ; get distance we can see
+              call draw_right_side      ; start drawing the right side of the maze
+              call draw_front_view      ; draw wall in front of player
+              call draw_side_walls
+              ;my print used to print screen @c000 to 16384 inc udg's  
+              call my_print             ;copy to screen from c000
+             ; call draw_colours         ;colourise the display
+              ret
+;end drawing the new screen
 
 ;----------------------------------------------------------------------------------
 ;draw a load of black boxes to hide the current screen. We then call part of this routine again to draw in the correct
@@ -693,4 +719,37 @@ blp1:	dec c
         pop de
 	    ret
 	;
+
+;##################################################################
+; set the player start position and direction
+
+set_map_start_pos:  
+
+ ;           ld l,01              ;top left of maze
+ ;           ld (player_pos),hl
+
+
+            ld hl,player_start_pos      ;point to player start at maze 0 - next byte is the direction
+            ld d,3                      ;to jump 3 bytes
+            ld a,(cur_map)
+            ld e,a
+            mul                         ;multiply d*e
+            add hl,de                   ;point to the correct player start position
+            ld de,(hl)
+            ld (player_pos),de          ;save our player start
+            inc hl
+            inc hl 
+            ld a,(hl)     
+            ld (player_dir),a           ;store our player view direction.
+            ret
+  
+;##################################################################
+;set map from BASIC for mapmaker program
+;poke map number into second byte
+
+basic_set_map:
+              ld a,0            
+              call set_map      ;set our map
+              ret
+    
       

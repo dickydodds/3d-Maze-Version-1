@@ -16,8 +16,18 @@ Use the following to check if a reg pair is zero SAVES BYTES AND IS QUICKER
 
 xor a will zero a reg
 
+********************************************
+SCREEN BUFFERING INFO
 
+Peter Ped Helcmanovsky
+the bit 6 in $69 defines what is displayed. The register $52 affects CPU mapping (what the CPU sees at $4000..$5FFF range), but the display signal generator goes directly into Bank5 or Bank7, not using $52 at all. You can even unmap Bank5 or Bank7 from CPU sight completely (and map for example Layer2 there), and the ULA screen is still displayed.
+The common scenario for back-buffer changes is to wait for vertical-blank (or top/bottom border area, outside of ULA pixels), switch display (bank5 or bank7 - the one with finished drawings - becoming visible for next frame), then map to $52 the opposite bank, and do your drawings...
+See my examples of double-buffered ULA:
+https://gist.github.com/.../80fd30f8c731b9f52b3952033a6a8564
+https://gist.github.com/.../59e7b3941177444ffb48ac974f3e8ba6
 
-dump the halts at line 236
+- if you will intentionally to map the wrong "live" bank or just fix it to single bank, the drawing will be blinking (I don't remember the details any more, but I think I left there some comments how to disable part of code to see the effect of live-buffer vs double-off-buffer)
 
-front wall not converted for switch or exit
+Richard Dodds
+no, the wiki literally says "enable display", not memory mapping. So bit6=0 means the Bank5 is displayed, and bit6=1 means Bank7 is displayed. The $52 register and what you see (with Z80N instructions) at address $4000 is completely unrelated to that, you can put there even Bank1.
+You can't move regular classic ULA away from Bank5, ie. mapping Bank1 to $4000 doesn't make it display Bank1. The display is hard-wired to Bank5 (or Bank7 in "shadow" mode). (the hard-wiring goes even deeper into HW, the content of Bank5 is not stored in SRAM chip where other memory is, but the mirror-copy is maintained directly inside the FPGA, also first half of Bank7 is mirrored in FPGA, ignoring the SRAM chip content).

@@ -17,6 +17,7 @@
 ;Nov 23rd 2020 - got switch graphics working.
 ;dec 2nd 2020 - added rudimentary sound and got the maze exit transition working
 ;dec 4th 2020 - exit to basic done when you exit level 0
+;dec 10th 2020 - added BC exit value to signal endgame sequence & virtually finished. Need to make the map editor now
 
 
 
@@ -59,25 +60,27 @@ main:           org 32768
 ; 0=north, 1=west, 2=south, 3=east
 
 start_game:    di       ;disable interrupts
+     
+;save the contents of bank 14
+              call save_bank_14
 
 ;first, clear the 2 ULA bank screens as they are at ROM location 0
-                          
+                        
               NEXTREG $50,10
               CALL clsULA
               NEXTREG $50,14
               CALL clsULA
-                     
+              NEXTREG $50,$FF
+
+
 ;setup ULA Plus Palette
-
+ 
               call Setup_palette
-
-; jump straight into sjasmplus debugger
-      ;  BREAK
         
 ;SET DEFAULT PLAYER POSITION AND DIRECTION
 ; 0=north, 1=west, 2=south, 3=east
-              ld a,2            ;set default to be south
-              ld (player_dir),a
+;              ld a,2            ;set default to be south
+;              ld (player_dir),a
 
               ;make sure our exit door is closed
               xor a                 ;reg a=0
@@ -87,16 +90,13 @@ start_game:    di       ;disable interrupts
 
 ;remember to set maze_highbyte for current maze
               
-;start on maze map 0
-a_map:
-              ld a,2            
-              call set_map      ;set our map
+;start on maze map 15
 
-;              ld h,$71          ;set at maze 1 bottom maze
-              ld l,01              ;top left of maze
-              
-              ld (player_pos),hl
-                    
+              ld a,15            
+              call set_map           ;set our map
+              call set_map_start_pos ;set player start position
+
+                  
 main_loop:
 
 
@@ -126,11 +126,11 @@ main_loop:
               nextreg 7,1
 
               ;put standard printing back to black text & white paper
-            ;  ld a,98
-            ;  ld (att),a
-
+              ld a,98
+              ld (att),a
+   
               call clear_char_screen    ;clear screen @c000
-
+ 
               call get_distance ; get distance we can see
                                 ; and save depth we can see
               ; load de is done when getting the distance above
@@ -162,7 +162,7 @@ main_loop:
               ;we need to copy the colours to an alternate memory screen then copy them back to the main screen
               ;we do this because we use the alternate colour screen when we transition between levels
  
-             call draw_colours     ;colourise the display but store at address 'attr_screen'
+              call draw_colours     ;colourise the display but store at address 'attr_screen'
               
               call copy_colours     ;copy colour map to screen 
 
@@ -173,9 +173,6 @@ main_loop:
 
 ;------------------------------------------------------------------------
               ;see if we need to draw the door or switch
-    ld a,1
-    ld (switch_pulled),a
-        
               call draw_door        ;see if we need to draw a door
               call draw_switch     ;see if we need to draw a switch
 ;----------------------------------------------------------------------
@@ -190,7 +187,6 @@ main_loop:
               call FlipULABuffers_peter
 
 
-
 ;set CPU Speed
               ;set CPU Speed Mhz
               ;0 = 3.5
@@ -198,7 +194,7 @@ main_loop:
               ;2 = 14 
               ;4 = 28
               nextreg 7,0
-
+ 
 ;#######################################
 ;now move based on keypress
 ;#######################################
@@ -220,62 +216,53 @@ main_loop:
 ;speed of game set here
 ;######################################
 
-              call pause         ;slow down the game here
+              call pause            ;slow down the game here
 
 wait4key:
-              call get_keys      ;keypress in C register
+              call get_keys         ;keypress in C register
               ld a,c
-              or a               ;clear flags
-              jp z,wait4key      ;wait for a keypress b4 continuing
+              or a                  ;clear flags
+              jp z,wait4key         ;wait for a keypress b4 continuing
 
               ;check if its the map key and have we already pressed it
-              ld b,a             ;save our key
-              ld a,(map_show)    ;get our last pressed map key
-              sub b              ;map key is 0 =1 in reg a
-                                 ;1= we are already showing the map, 0 says we are not
-              jr z,wait4key      ;zero flag set if map_show=1 so do nothing
+              ld b,a                ;save our key
+              ld a,(map_show)       ;get our last pressed map key
+              sub b                 ;map key is 0 =1 in reg a
+                                    ;1= we are already showing the map, 0 says we are not
+              jr z,wait4key         ;zero flag set if map_show=1 so do nothing
 
-              xor a               ;make reg a zero
+              xor a                 ;make reg a zero
               ld (map_show),a
-              ld a,b              ;now carry on :)
+              ld a,b                ;now carry on :)
 
-              cp $20;16              ; 8 (right) pressed
+              cp $20             ; 8 (right) pressed
               jp z,plus
         
-key_x         cp 1;8               ;x pressed. (old) 8=6 (down) pressed
-              jp nz, comp_4      ;carry on if not pressed otherwise return to BASIC
-              nextreg $43,$0E      ;turn off ulanext
-              nextreg $69,0      ;turn off ula banking
-              NEXTREG $50,$FF
-              NEXTREG $52,$0A 
-              ld bc,$7ffd
-              ld a, $ff
-              out (c),a
-              ld hl, $535c          ;restore this sysvar
-              ld (hl),0
-              ld hl, $5b67          ;restore this sysvar
-              ld (hl),0
-              ld iy,$5c3a
-
-              ei
-              ret                ;return to BASIC
+key_x         cp 1               ;x pressed. (old) 8=6 (down) pressed
+              jp nz, comp_4         ;carry on if not pressed otherwise return to BASIC
+              ld bc,1               ;set bc to non ZERO to indicate we hit the EXIT key and need to return to BASIC
+                                    ;and NOT to play the exit game routine
+              jp ret_to_basic       ;exit to BASIC
    
-comp_4:       cp 8;4               ;7 (forward) pressed
+comp_4:       cp 8                ;7 (forward) pressed
               jp z,move_forward
            
-              cp 4;2               ; 5 (left) pressed
+              cp 4                ; 5 (left) pressed
               jp z,minus
 
+              cp 16                 ; 6 pressed
+              jp z,wait4key
+
               ;0 was pressed or we never get here!
-              xor b             ;make b zero
+              xor b                 ;make b zero
               ld a,(map_show)
-              sub b,a           ;exit if b=1 as we are already showing the map!
+              sub b,a               ;exit if b=1 as we are already showing the map!
               jp nz,wait4key 
-              inc a             ;a=1 to show we pressed 6 to show the map
-              ld (map_show),a   ;save it
+              inc a                 
+             ; ld (map_show),a       ;save it
               push hl 
             
-              ld (map_show),a   ;save that we have pressed 6 - reg a = 1
+              ld (map_show),a       ;save that we have pressed 6 - reg a = 1
 
               CALL DRAW_MAP
 
@@ -319,7 +306,6 @@ move_forward:
 ; door will always face NORTH. 
 ; show door type = 0 = front, 1 = side
 
-           ;  ld (show_exit),a
              ;are we facing south?
              ld a,(player_dir)
              sub 2                  ;2 = south
@@ -331,10 +317,12 @@ move_forward:
              ld a,(hl)
              cp _me                 ;is it our DOOR block?
              jr nz,cont_a           ;if not, just continue in the normal way
+
              ;YES its a door - so exit through it - but only if we are looking south
              ld a,(switch_pulled)
              and a
              jr z,cont_a            ;if not, just continue in the normal way
+
 ;Door is in front of us AND open so lets exit!
 
            ; reset the switch pulled back to off position
@@ -421,16 +409,9 @@ cont_b:       ld a,(maxview)         ;if our maximum view depth = 0 ie we are
               jp z,main_loop   ;we are at location 0 in the maze, so, again do nothing
                                 ;and just exit so we stay at position 1
 
-;;;;;;;;;;#########################
-              ;now check if l=255 ; 
-;              cp 255                ;are we at the bottom edge of the maze
-;              jp z,main_loop
-
               ;we ARE at the bottom row so DO NOT MOVE FORWARD
               ld (player_pos),hl
               jp main_loop          ;continue to the game loop
-
-
 
               
 ;we get here as we are not at the bottom of the maze.
@@ -521,7 +502,7 @@ get_keys:
 readke  ld   hl,keytab
         ld   bc,$0600
  ;
- ;5 keys to read
+ ;6 keys to read
  ;
 read_1  ld   a,(hl)
         rra
@@ -636,7 +617,7 @@ keytab db 0*8+4, 4*8+4, 4*8+3, 4*8+2, 4*8+0, 3*8+2
  ;
  ;       db 8*8+1,8*8+0,8*8+3,8*8+2,8*8+4
  ;
-end_k nop
+;end_k nop
 
 ;##############################################
 ;##############################################
@@ -665,9 +646,77 @@ loop3   inc h                   ; times by 256
         ld a, h
         ld (maze_highbyte),a
         ret
+;*******************************************************************
+;save and restore the contents of bank 14
 
+save_bank_14:
+        ;save the current bank in slot $57
+        ld a,$57
+        call readnextreg 
+        push af
+        nextreg $57,32       ;page in bank 32 to upper RAM
+        nextreg $52,14       ;page in shadow RAM page
+        ld  hl,$4000
+        ld  de,$e000
+        ld  bc,8192
+        ld a,(hl)
+        ld  (de),a
+        ldir
+        ;restore bank $57 bank  again
+        pop af
+        nextreg $57,a 
+        nextreg $52,10       ;restore normal screen
+        ret
 
-	
+restore_bank_14:
+; break
+        ;save the current bank in slot $57
+        ld a,$57
+        call readnextreg 
+        push af
+        nextreg $57,32       ;page in bank 32 to upper RAM
+        nextreg $52,14       ;page in shadow RAM page
+        ld  hl,$e000
+        ld  de,$4000
+        ld  bc,8192
+        ld a,(hl)
+        ld  (de),a
+        ldir
+        ;restore bank $57 bank  again
+        pop af
+        ret
+
+;*******************************************************************
+;return to Basic
+
+ret_to_basic
+            push bc         ;save our exit value
+
+ call restore_bank_14
+
+;clear the real ULA screen
+
+            nextreg $50,10
+            ;clear the viewable display - $000 = $4000 at reg $52
+            ld  hl,$0000
+            ld  de,$0001
+            ld  bc,$17ff
+            ld  (hl),0
+            ldir
+        
+            ;make the attributes white paper and black ink
+            ld  (hl),0;56       ;white paper, black ink on standard ula
+            ld  bc,$02FF
+            ldir
+            nextreg $50,$FF     ;restore reg $50
+            nextreg $52,10      ;page in the real spectrum screen back into place in memory
+
+            nextreg $43,$0      ;turn off ulanext and return to standard ULA colours
+            nextreg $69,0       ;bank in the correct screen to view
+            pop bc              ;restore th exit value
+            ei
+            ret
+
 
 ;#################################################################
 ;Character screen reservation
@@ -796,8 +845,8 @@ charset_1:
 ;variables
 ;-----------------------------------------------
 
-player_pos: dw $0                  ; only when in the main game loop
-                               ; holds the low byte of the current insertion location when inserting a passageway into the maze.
+player_pos: dw $0             ; only when in the main game loop
+                              ; holds the low byte of the current insertion location when inserting a passageway into the maze.
           
 ;l4083:  db 134               ; high byte of the maze location data
 ;l4084:  db 08                ; holds the desired length of the passageway beign inserted when constructing the maze.
@@ -854,7 +903,7 @@ map_show    db  0     ;tells is if we are already showing the map
 show_exit       db 0  ;used to say whether to draw the full size exit door or not
                       ;0 = draw a closed exit door
                       ;1 = draw an open exit door
-switch_pulled   db  0 ; 0 and 1 for on and off - default off
+switch_pulled   db  0 ; 0 and 1 for off and o - default off
 sp_store        dw  0   ;save and restore the SP
 switch_sound    dw 0    ;shows if switch sound already sounded = 0=no, 1=yes
 game_exit       db  0   ;set to 255 if we need to exit the game as we got passed level 0
@@ -926,7 +975,7 @@ _chars:
  DB	153,200,100,50,25,140,206,171  	;a5	65376		top left brick diag
  DB	16,40,16,124,16,40,40,68       	;a6	65384		man
  DB	0,120,107,126,124,104,120,0    	;a7	65392		switch
- DB	255,165,255,165,165,255,165,255	;a8	65400		fancy square
+ db 153,102,90,90,90,90,102,153     ;a8	65400       exit door
  DB	128,192,224,240,255,255,255,255	;a9	65408		top left 5
  DB	1,3,7,15,255,255,255,255       	;aa	65416		top right 5
  DB	255,255,255,255,240,224,192,128	;ab	65424		bot left  5
@@ -939,10 +988,10 @@ _chars:
  DB	1,3,7,15,31,63,127,255         	;b2	65480		bot right triangle
  DB	128,192,224,240,248,252,254,255	;b3	65488		bot right triangle
 
- DB	255,85,255,170,255,85,255,170	;b4	65496		small wall
- DB	255,136,136,255,162,162,255,128	;b5	65504		mediumwall
- DB	255,136,136,136,255,224,192,128	;b6	65512		largewall
- DB	255,170,255,170,255,170,255,170 ;b7	65520		mediumwall_1
+ DB	255,85,255,170,255,85,255,170	;b4	65496		small wall  (5)
+ DB	255,136,136,255,162,162,255,128	;b5	65504		mediumwall  (2)
+ DB	255,136,136,136,255,224,192,128	;b6	65512		largewall   (4)
+ DB	255,170,255,170,255,170,255,170 ;b7	65520		mediumwall_1(3)
  DB	255,136,136,136,255,128,128,128 ;b8	65528		hugewall
 
 ;layer 5 section 3 right TOP

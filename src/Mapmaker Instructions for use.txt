@@ -1,0 +1,11 @@
+Mapmaker Instructions and Tips
+
+Tips
+1 Do not put a block immediately in front of the player on entry to a map as it
+2 always place 
+3 if you place multiple player positions, yelloe 'P' then only the one lowest in the maze will be used so just plae 1 and dont forget to point your player view in the right direction
+
+Known Bugs.
+1 pressing the map key 0 immediately on entering a map may give a blank display on your next move. Simply look left then right to fix it.
+
+

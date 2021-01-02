@@ -131,8 +131,8 @@ draw_side_walls
 
         or a                    ;clear carry flag
         ld a,(maxview)          ;how far we can see in front of us
-        cp 5
-        ret nc                  ;exit if its 5 or greater
+ ;       cp 5
+ ;       ret nc                  ;exit if its 5 or greater
                                 ;carry set if <5
 
 ;now check if maxview and depth are the same as this indicates a side wall
@@ -162,6 +162,7 @@ draw_side_walls
         ;depth 4
         jp z,cp_wall_4
         cp 4
+ ;ret
         ;depth 5
         jp z,cp_wall_5
         ret                     ;go back now
@@ -293,9 +294,8 @@ loop85: inc ix
 cp_wall_4:
 ;do left side first - check for char ' ' showing nothing drawn there
 
-        ld hl,$c153             ;we should be at the top left of the face
-        ld ix,$c153
-;
+        ld hl,$c153;2             ;we should be at the top left of the face
+        ld ix,$c153;2;c153
         ld de,lr_wall
         ld a,_mediumwall_1
         ld (de),a
@@ -315,11 +315,9 @@ loop86: push hl
 ;now do the right side
         ld hl,$c159             ;we should be at the top right of the face
         ld ix,$c159
-;        ld de,$c158             ;1 line left of our wall face
         ld de,lr_wall
         ld a,_mediumwall_1
-        ld (de),a
-        
+        ld (de),a     
         ld c,10                  ;draw 10 columns to the border
 loop87: push hl
         ld b,4                 ;4 chars high
@@ -358,8 +356,8 @@ loop89: push hl
         jp nz,loop89            ;do this 5 times
 
 ;now do the right side
-        ld hl,$c175             ;we should be at the top right of the face
-        ld ix,$c175
+        ld hl,$c176             ;we should be at the top right of the face
+        ld ix,$c176
 ;        ld de,$c176             ;1 line left of our wall face
         ld de,lr_wall
         ld a,_smallwall
@@ -422,7 +420,7 @@ draw_colours: ld a, skycol           ; set the sky colour
               ld (sky_floor),a
               sub a                 ; make a zero
               ld (left),a
-              ld bc,783             ; 768 attributes to fill
+              ld bc,768+15;783             ; 768 attributes to fill
               ld de,(scr_attr_add)  ; start of spectrum attributes after char screen
               ld hl,$c000           ; start of zx81 display file in memory
                            
@@ -556,7 +554,7 @@ next_pos:      ld a, (left)
                ld (left),a
                ret nz           ; return if not
 
-;now do paper colour of score and nav git on right
+;now do paper colour of score and nav bit on right
                ;now decrease bc by 7 & increase display pos by 7
                ;to start of next line
                sub a            ; zero a register
@@ -718,7 +716,7 @@ set_floor_colour:
         ld b,a        
         ld hl,(cur_map)     ;get our current map
         ld d,l
-        dec d               ;need to point 1 less
+        nop;dec d               ;need to point 1 less
         ld e,2              
         mul de              ;multiply our current map number by 2
         ld hl,data_table

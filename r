@@ -14,8 +14,9 @@ else
 #    udisksctl unmount -b /dev/loop0p1
 
 #now copy the files over to the sdcard
-    cp 3dmaze.bin /media/dicky/EMPTY-2GB/ 
-    cp project.map /media/dicky/EMPTY-2GB/ 
+#/media/dicky/EMPTY-2GB/rd-3dmaze
+    cp 3dmaze.bin /media/dicky/EMPTY-2GB/rd-3dmaze 
+    cp project.map /media/dicky/EMPTY-2GB/rd-3dmaze 
 
 #now run cspect with our code 
     wine bin\\CSpect.exe -r -esc -tv -brk -w3 -zxnext -nextrom -map=project.map -mmc=../sdcard/cspect-next-2gb.img

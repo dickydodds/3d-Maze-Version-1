@@ -365,7 +365,7 @@ _open:       call draw_door_right_open
 ;#########################################################################################
 ;SWITCH Drawing Routine - I am being very lazy here and copying the code from the door 
 ;drawing as its the same thing to do for both the door and switch and  cant be bothered atm to 
-;modify the dor routine and save bytes! (nov 2020)
+;modify the door routine and save bytes! (nov 2020)
 ;-----------------------------------------------------------------------------------------
 
 draw_switch:

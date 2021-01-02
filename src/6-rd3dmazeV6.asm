@@ -137,7 +137,7 @@ do_draw_5r:
 ;a side wall and wont see the hashes!
 
         ld a,_smallwall;_topright5          ; load with top right char $a9
-;        ld a,'#'
+
         ld (var1),a             ;top of mwadd udg
 ;        inc a
 ;        inc a

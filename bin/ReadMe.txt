@@ -53,7 +53,7 @@ Command Line Options
 -debug             =  start up in the debugger
 -remote            =  Enable the remote debugger mode, by disabling the debugger screen.
 -fill=$XXXXX...XX  =  Fill memory with this hex sequence on power up
-
+-rewind            =  Enable CPU history for debugger rewinding
 
 
 
@@ -199,7 +199,7 @@ NEXTREG <reg>,<val> Poke a next register
 SAVE "NAME",add,len                   Save in the 64K memory space
 SAVE "NAME",BANK:OFFSET,length        Save in physical memory using a bank and offset as the start address
 SAVE "NAME",BANK:OFFSET,BANK:OFFSET   Save in physical memory using a bank and offset as the start address, and as an end address
-
+REWIND              Enable/Disable CPU rewind mode
 
 
 
