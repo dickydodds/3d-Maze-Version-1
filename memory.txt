@@ -174,284 +174,280 @@
  173  8058
  174  8058              ;------------------------------------------------------------------------
  175  8058                            ;see if we need to draw the door or switch
- 176  8058                  ;debug line
- 177  8058                 ;ld a,0
- 178  8058                 ;ld (switch_pulled),a
- 179  8058
- 180  8058 CD D9 8E                   call draw_door        ;see if we need to draw a door
- 181  805B CD 2C 8F                   call draw_switch     ;see if we need to draw a switch
- 182  805E              ;----------------------------------------------------------------------
- 183  805E              ;setup right hand side of the screen
- 184  805E CD 9D 9A                   call draw_screen_right
- 185  8061
- 186  8061                            ;do the walking sound
- 187  8061 1E 0A        	          ld e,10		;10 for the walk sound
- 188  8063 CD 89 C7                   call walk_sound
- 189  8066
- 190  8066                            ;now flip the screen into the visible screen
- 191  8066 CD B5 81                   call FlipULABuffers_peter
- 192  8069
- 193  8069
- 194  8069              ;set CPU Speed
- 195  8069                            ;set CPU Speed Mhz
- 196  8069                            ;0 = 3.5
- 197  8069                            ;1 = 7
- 198  8069                            ;2 = 14
- 199  8069                            ;4 = 28
- 200  8069 ED 91 07 00                nextreg 7,0
+ 176  8058 CD D9 8E                   call draw_door        ;see if we need to draw a door
+ 177  805B CD 2C 8F                   call draw_switch     ;see if we need to draw a switch
+ 178  805E              ;----------------------------------------------------------------------
+ 179  805E              ;setup right hand side of the screen
+ 180  805E CD 9D 9A                   call draw_screen_right
+ 181  8061
+ 182  8061                            ;do the walking sound
+ 183  8061 1E 0A        	          ld e,10		;10 for the walk sound
+ 184  8063 CD 89 C7                   call walk_sound
+ 185  8066
+ 186  8066                            ;now flip the screen into the visible screen
+ 187  8066 CD B5 81                   call FlipULABuffers_peter
+ 188  8069
+ 189  8069
+ 190  8069              ;set CPU Speed
+ 191  8069                            ;set CPU Speed Mhz
+ 192  8069                            ;0 = 3.5
+ 193  8069                            ;1 = 7
+ 194  8069                            ;2 = 14
+ 195  8069                            ;4 = 28
+ 196  8069 ED 91 07 00                nextreg 7,0
+ 197  806D
+ 198  806D              ;#######################################
+ 199  806D              ;now move based on keypress
+ 200  806D              ;#######################################
  201  806D
- 202  806D              ;#######################################
- 203  806D              ;now move based on keypress
- 204  806D              ;#######################################
- 205  806D
- 206  806D              ;Now set our view direction based on keypress
- 207  806D
- 208  806D              ;c bit values: 1 = 0 fire
- 209  806D               ;             2 = 5 right
- 210  806D               ;             4 = 7 up (forward)
- 211  806D               ;             8 = 6 down
- 212  806D               ;            16 = 8 left
+ 202  806D              ;Now set our view direction based on keypress
+ 203  806D
+ 204  806D              ;c bit values: 1 = 0 fire
+ 205  806D               ;             2 = 5 right
+ 206  806D               ;             4 = 7 up (forward)
+ 207  806D               ;             8 = 6 down
+ 208  806D               ;            16 = 8 left
+ 209  806D
+ 210  806D
+ 211  806D              ;set the player direction based on keypress
+ 212  806D              ; 0=north, 1=west, 2=south, 3=east
  213  806D
  214  806D
- 215  806D              ;set the player direction based on keypress
- 216  806D              ; 0=north, 1=west, 2=south, 3=east
- 217  806D
+ 215  806D              ;######################################
+ 216  806D              ;speed of game set here
+ 217  806D              ;######################################
  218  806D
- 219  806D              ;######################################
- 220  806D              ;speed of game set here
- 221  806D              ;######################################
- 222  806D
- 223  806D CD 54 81                   call pause            ;slow down the game here
- 224  8070
- 225  8070              wait4key:
- 226  8070 CD C0 C7                   call get_keys         ;keypress in C register
- 227  8073 79                         ld a,c
- 228  8074 B7                         or a                  ;clear flags
- 229  8075 CA 70 80                   jp z,wait4key         ;wait for a keypress b4 continuing
- 230  8078
- 231  8078                            ;check if its the map key and have we already pressed it
- 232  8078 47                         ld b,a                ;save our key
- 233  8079 3A 29 FA                   ld a,(map_show)       ;get our last pressed map key
- 234  807C 90                         sub b                 ;map key is 0 =1 in reg a
- 235  807D                                                  ;1= we are already showing the map, 0 says we are not
- 236  807D 28 F1                      jr z,wait4key         ;zero flag set if map_show=1 so do nothing
- 237  807F
- 238  807F AF                         xor a                 ;make reg a zero
- 239  8080 32 29 FA                   ld (map_show),a
- 240  8083 78                         ld a,b                ;now carry on :)
- 241  8084
- 242  8084 FE 20                      cp $20             ; 8 (right) pressed
- 243  8086 CA BE 80                   jp z,plus
- 244  8089
- 245  8089 FE 01        key_x         cp 1               ;x pressed. (old) 8=6 (down) pressed
- 246  808B C2 94 80                   jp nz, comp_4         ;carry on if not pressed otherwise return to BASIC
- 247  808E 01 01 00                   ld bc,1               ;set bc to non ZERO to indicate we hit the EXIT key and need to return to BASIC
- 248  8091                                                  ;and NOT to play the exit game routine
- 249  8091 C3 6D C8                   jp ret_to_basic       ;exit to BASIC
- 250  8094
- 251  8094 FE 08        comp_4:       cp 8                ;7 (forward) pressed
- 252  8096 CA D9 80                   jp z,move_forward
- 253  8099
- 254  8099 FE 04                      cp 4                ; 5 (left) pressed
- 255  809B CA CB 80                   jp z,minus
- 256  809E
- 257  809E FE 10                      cp 16                 ; 6 pressed
- 258  80A0 CA 70 80                   jp z,wait4key
- 259  80A3
- 260  80A3                            ;0 was pressed or we never get here!
- 261  80A3 A8                         xor b                 ;make b zero
- 262  80A4 3A 29 FA                   ld a,(map_show)
- 263  80A7 90 97                      sub b,a               ;exit if b=1 as we are already showing the map!
- 264  80A9 C2 70 80                   jp nz,wait4key
- 265  80AC 3C                         inc a
- 266  80AD                           ; ld (map_show),a       ;save it
- 267  80AD E5                         push hl
- 268  80AE
- 269  80AE 32 29 FA                   ld (map_show),a       ;save that we have pressed 6 - reg a = 1
- 270  80B1
- 271  80B1 CD 2C 8B                   CALL DRAW_MAP
- 272  80B4
- 273  80B4 E1                         pop hl
- 274  80B5
- 275  80B5 C3 70 80                   jp wait4key
- 276  80B8
- 277  80B8 32 08 FA     go1:          ld (player_dir),a
- 278  80BB C3 28 80                   jp main_loop      ;start again
- 279  80BE
- 280  80BE
- 281  80BE              plus:
- 282  80BE 3A 08 FA                   ld a,(player_dir)
- 283  80C1 3C                         inc a
- 284  80C2 FE 04                      cp 4          ;if its 4, make it 0 as it cant be >3
- 285  80C4 C2 B8 80                   jp nz,go1     ;start game loop if its not 4
- 286  80C7 97                         sub a         ;make it 0 (wraparound
- 287  80C8 C3 B8 80                   jp go1
- 288  80CB
- 289  80CB 3A 08 FA     minus:        ld a,(player_dir)
- 290  80CE 3D                         dec a
- 291  80CF FE FF                      cp 255
- 292  80D1 C2 B8 80                   jp nz,go1         ;continue game if not 0
- 293  80D4 3E 03                      ld a,3            ;wraparound
- 294  80D6 C3 B8 80                   jp go1
- 295  80D9
- 296  80D9
- 297  80D9              ;how do i implement a less-than/greater-than test in assembly?
- 298  80D9
- 299  80D9              ;a: to compare stuff, simply do a cp, and if the zero flag is set,
- 300  80D9              ;a and the argument were equal, else if the carry is set the argument was greater,
- 301  80D9              ;and finally, if neither is set, then reg 'a' must be greater
- 302  80D9              ;(cp does nothing to the registers, only the f (flag) register is changed).
- 303  80D9
- 304  80D9              move_forward:
+ 219  806D CD 54 81                   call pause            ;slow down the game here
+ 220  8070
+ 221  8070              wait4key:
+ 222  8070 CD C0 C7                   call get_keys         ;keypress in C register
+ 223  8073 79                         ld a,c
+ 224  8074 B7                         or a                  ;clear flags
+ 225  8075 CA 70 80                   jp z,wait4key         ;wait for a keypress b4 continuing
+ 226  8078
+ 227  8078                            ;check if its the map key and have we already pressed it
+ 228  8078 47                         ld b,a                ;save our key
+ 229  8079 3A 29 FA                   ld a,(map_show)       ;get our last pressed map key
+ 230  807C 90                         sub b                 ;map key is 0 =1 in reg a
+ 231  807D                                                  ;1= we are already showing the map, 0 says we are not
+ 232  807D 28 F1                      jr z,wait4key         ;zero flag set if map_show=1 so do nothing
+ 233  807F
+ 234  807F AF                         xor a                 ;make reg a zero
+ 235  8080 32 29 FA                   ld (map_show),a
+ 236  8083 78                         ld a,b                ;now carry on :)
+ 237  8084
+ 238  8084 FE 20                      cp $20             ; 8 (right) pressed
+ 239  8086 CA BE 80                   jp z,plus
+ 240  8089
+ 241  8089 FE 01        key_x         cp 1               ;x pressed. (old) 8=6 (down) pressed
+ 242  808B C2 94 80                   jp nz, comp_4         ;carry on if not pressed otherwise return to BASIC
+ 243  808E 01 01 00                   ld bc,1               ;set bc to non ZERO to indicate we hit the EXIT key and need to return to BASIC
+ 244  8091                                                  ;and NOT to play the exit game routine
+ 245  8091 C3 6D C8                   jp ret_to_basic       ;exit to BASIC
+ 246  8094
+ 247  8094 FE 08        comp_4:       cp 8                ;7 (forward) pressed
+ 248  8096 CA D9 80                   jp z,move_forward
+ 249  8099
+ 250  8099 FE 04                      cp 4                ; 5 (left) pressed
+ 251  809B CA CB 80                   jp z,minus
+ 252  809E
+ 253  809E FE 10                      cp 16                 ; 6 pressed
+ 254  80A0 CA 70 80                   jp z,wait4key
+ 255  80A3
+ 256  80A3                            ;0 was pressed or we never get here!
+ 257  80A3 A8                         xor b                 ;make b zero
+ 258  80A4 3A 29 FA                   ld a,(map_show)
+ 259  80A7 90 97                      sub b,a               ;exit if b=1 as we are already showing the map!
+ 260  80A9 C2 70 80                   jp nz,wait4key
+ 261  80AC 3C                         inc a
+ 262  80AD                           ; ld (map_show),a       ;save it
+ 263  80AD E5                         push hl
+ 264  80AE
+ 265  80AE 32 29 FA                   ld (map_show),a       ;save that we have pressed 6 - reg a = 1
+ 266  80B1
+ 267  80B1 CD 2C 8B                   CALL DRAW_MAP
+ 268  80B4
+ 269  80B4 E1                         pop hl
+ 270  80B5
+ 271  80B5 C3 70 80                   jp wait4key
+ 272  80B8
+ 273  80B8 32 08 FA     go1:          ld (player_dir),a
+ 274  80BB C3 28 80                   jp main_loop      ;start again
+ 275  80BE
+ 276  80BE
+ 277  80BE              plus:
+ 278  80BE 3A 08 FA                   ld a,(player_dir)
+ 279  80C1 3C                         inc a
+ 280  80C2 FE 04                      cp 4          ;if its 4, make it 0 as it cant be >3
+ 281  80C4 C2 B8 80                   jp nz,go1     ;start game loop if its not 4
+ 282  80C7 97                         sub a         ;make it 0 (wraparound
+ 283  80C8 C3 B8 80                   jp go1
+ 284  80CB
+ 285  80CB 3A 08 FA     minus:        ld a,(player_dir)
+ 286  80CE 3D                         dec a
+ 287  80CF FE FF                      cp 255
+ 288  80D1 C2 B8 80                   jp nz,go1         ;continue game if not 0
+ 289  80D4 3E 03                      ld a,3            ;wraparound
+ 290  80D6 C3 B8 80                   jp go1
+ 291  80D9
+ 292  80D9
+ 293  80D9              ;how do i implement a less-than/greater-than test in assembly?
+ 294  80D9
+ 295  80D9              ;a: to compare stuff, simply do a cp, and if the zero flag is set,
+ 296  80D9              ;a and the argument were equal, else if the carry is set the argument was greater,
+ 297  80D9              ;and finally, if neither is set, then reg 'a' must be greater
+ 298  80D9              ;(cp does nothing to the registers, only the f (flag) register is changed).
+ 299  80D9
+ 300  80D9              move_forward:
+ 301  80D9
+ 302  80D9              ;----------------------------------------------------------------------------
+ 303  80D9              ;1st, check if we are trying to enter an open exit door
+ 304  80D9              ;so, is the door open?
  305  80D9
- 306  80D9              ;----------------------------------------------------------------------------
- 307  80D9              ;1st, check if we are trying to enter an open exit door
- 308  80D9              ;so, is the door open?
- 309  80D9
- 310  80D9              ; door will always face NORTH.
- 311  80D9              ; show door type = 0 = front, 1 = side
- 312  80D9
- 313  80D9                           ;are we facing south?
- 314  80D9 3A 08 FA                  ld a,(player_dir)
- 315  80DC D6 02                     sub 2                  ;2 = south
- 316  80DE 20 2C                     jr nz,cont_a           ;if not, just continue in the normal way
- 317  80E0
- 318  80E0 2A 00 FA                  ld hl,(player_pos)
- 319  80E3 11 10 00                  ld de, $0010           ; (+16) to go to next line in front of us - south
- 320  80E6 19                        add hl,de
- 321  80E7 7E                        ld a,(hl)
- 322  80E8 FE C0                     cp _me                 ;is it our DOOR block?
- 323  80EA 20 20                     jr nz,cont_a           ;if not, just continue in the normal way
- 324  80EC
- 325  80EC                           ;YES its a door - so exit through it - but only if we are looking south
- 326  80EC 3A 2B FA                  ld a,(switch_pulled)
- 327  80EF A7                        and a
- 328  80F0 28 1A                     jr z,cont_a            ;if not, just continue in the normal way
- 329  80F2
- 330  80F2              ;Door is in front of us AND open so lets exit!
- 331  80F2
- 332  80F2                         ; reset the switch pulled back to off position
- 333  80F2 AF                       xor a
- 334  80F3 32 2B FA                 ld (switch_pulled),a
- 335  80F6
- 336  80F6              ;reset switch sound variable
- 337  80F6 32 2E FA                 ld (switch_sound ),a
- 338  80F9
- 339  80F9              ;need to set the player start position now.  - MOVED TO EXIT_ANIM ROUTINE
- 340  80F9
- 341  80F9               ;           ld a,(cur_map)
- 342  80F9               ;           dec a               ;point to our next map
- 343  80F9               ;           call set_map      ;set our map
- 344  80F9               ;           ld l,01              ;top left of maze
- 345  80F9               ;           ld (player_pos),hl
- 346  80F9
- 347  80F9              ;draw exit animation
- 348  80F9                          ;we moved forward and overwrote the door so redraw it
- 349  80F9 ED 91 07 03              nextreg 7,3             ;set cpu speed to max
- 350  80FD
- 351  80FD CD 00 C6                 call exit_anim
- 352  8100
- 353  8100              ;**********************************************************************
- 354  8100              ;GAME EXIT CHECK
- 355  8100              ;check if we got past level 0 - if so exit to BASIC
- 356  8100 3A 30 FA                 ld a,(game_exit)
- 357  8103 FE 00                    cp 0
- 358  8105 C8                       ret z
- 359  8106              ;**********************************************************************
- 360  8106
- 361  8106                          ;now flip the screen into the visible screen
- 362  8106 CD B5 81                 call FlipULABuffers_peter
- 363  8109
- 364  8109 C3 70 80                 jp wait4key             ;screen is already drawn so dont draw it again.
- 365  810C              ;--------------------------------------------------------------------------------
- 366  810C              cont_a:
- 367  810C              ;1st, check if we are trying to flick the switch on
- 368  810C              ;so, is the door open?
- 369  810C
- 370  810C              ; switch will always face NORTH.
- 371  810C              ; show switch type = 0 = off, 1 = on
- 372  810C
- 373  810C                           ;are we facing south?
- 374  810C 3A 08 FA                  ld a,(player_dir)
- 375  810F D6 02                     sub 2                  ;2 = south
- 376  8111 20 17                     jr nz,cont_b           ;if not, just continue in the normal way
- 377  8113
- 378  8113 2A 00 FA                  ld hl,(player_pos)
- 379  8116 11 10 00                  ld de, $0010           ; (+16) to go to next line in front of us - south
- 380  8119 19                        add hl,de
- 381  811A 7E                        ld a,(hl)
- 382  811B FE E0                     cp _ms                 ;is it our SWITCH block?
- 383  811D 20 0B                     jr nz,cont_b           ;if not, just continue in the normal way
- 384  811F                           ;YES its a switch - so mark it as switched on
- 385  811F 3E 01                     ld a,1
- 386  8121 32 2B FA                  ld (switch_pulled),a
- 387  8124
- 388  8124              ;draw switch
- 389  8124 CD 2C 8F                 call draw_switch      ;draw our switch
- 390  8127 C3 28 80                 jp main_loop          ;jump to our next level
- 391  812A              ;--------------------------------------------------------------------------------
- 392  812A
- 393  812A 3A 02 FA     cont_b:       ld a,(maxview)         ;if our maximum view depth = 0 ie we are
- 394  812D                                                  ;in front of a wall face
- 395  812D                                                  ;then do nothing
- 396  812D 3C                         inc a
- 397  812E 3D                         dec a
- 398  812F CA 70 80                   jp z,wait4key
- 399  8132
- 400  8132 CD B7 8E                   call load_walk        ; get walk forward value to add
- 401  8135 2A 00 FA                   ld hl,(player_pos)    ;get our current position
- 402  8138 7C                         ld a,h                ;save our current H value for comparing later
- 403  8139 19                         add hl,de              ;move our position forward in our view
- 404  813A
- 405  813A BC                         cp h              ;have we crossed 256 byte boundry?
- 406  813B C2 28 80                   jp nz,main_loop   ;we have exited our boundry so dont
- 407  813E                                              ;move our view anywhere.
- 408  813E                            ;now test if l=0
- 409  813E              ;              ld a,l
- 410  813E 2C                         inc l
- 411  813F 2D                         dec l             ;are we at position 0? Exit if yes and do nothing
- 412  8140                            ;cp 0
- 413  8140 CA 28 80                   jp z,main_loop   ;we are at location 0 in the maze, so, again do nothing
- 414  8143                                              ;and just exit so we stay at position 1
- 415  8143
- 416  8143                            ;we ARE at the bottom row so DO NOT MOVE FORWARD
- 417  8143 22 00 FA                   ld (player_pos),hl
- 418  8146 C3 28 80                   jp main_loop          ;continue to the game loop
- 419  8149
- 420  8149
- 421  8149              ;we get here as we are not at the bottom of the maze.
- 422  8149 FE 10        move_1:       cp 16                 ;are we at the top edge of the maze?
- 423  814B D2 28 80                   jp nc,main_loop
- 424  814E 22 00 FA                   ld (player_pos),hl    ;save our new position
- 425  8151
- 426  8151              ;we are at the TOP of the maze so dont saaveour addition to HL
- 427  8151 C3 28 80                   jp main_loop          ;continue to the game loop
- 428  8154
- 429  8154              ;##########################################################################
- 430  8154              ;Pause routine for slowing down the game
- 431  8154
- 432  8154 E5           pause:        push hl
- 433  8155 C5                         push bc
- 434  8156 06 01                      ld b,1           ;delay loop
- 435  8158              loop19:       ;halt             ;no interrupts!
- 436  8158 21 10 27                   ld hl,10000
- 437  815B 2B           abc:          dec hl
- 438  815C 7C                         ld a,h
- 439  815D 3D                         dec a
- 440  815E                            ;dec h
- 441  815E 20 FB                      jr nz,abc
- 442  8160 05                         dec b
- 443  8161 C2 58 81                   jp nz,loop19
- 444  8164 C1                         pop bc
- 445  8165 E1                         pop hl
- 446  8166 C9                         ret
- 447  8167              ;##########################################################################
+ 306  80D9              ; door will always face NORTH.
+ 307  80D9              ; show door type = 0 = front, 1 = side
+ 308  80D9
+ 309  80D9                           ;are we facing south?
+ 310  80D9 3A 08 FA                  ld a,(player_dir)
+ 311  80DC D6 02                     sub 2                  ;2 = south
+ 312  80DE 20 2C                     jr nz,cont_a           ;if not, just continue in the normal way
+ 313  80E0
+ 314  80E0 2A 00 FA                  ld hl,(player_pos)
+ 315  80E3 11 10 00                  ld de, $0010           ; (+16) to go to next line in front of us - south
+ 316  80E6 19                        add hl,de
+ 317  80E7 7E                        ld a,(hl)
+ 318  80E8 FE C0                     cp _me                 ;is it our DOOR block?
+ 319  80EA 20 20                     jr nz,cont_a           ;if not, just continue in the normal way
+ 320  80EC
+ 321  80EC                           ;YES its a door - so exit through it - but only if we are looking south
+ 322  80EC 3A 2B FA                  ld a,(switch_pulled)
+ 323  80EF A7                        and a
+ 324  80F0 28 1A                     jr z,cont_a            ;if not, just continue in the normal way
+ 325  80F2
+ 326  80F2              ;Door is in front of us AND open so lets exit!
+ 327  80F2
+ 328  80F2                         ; reset the switch pulled back to off position
+ 329  80F2 AF                       xor a
+ 330  80F3 32 2B FA                 ld (switch_pulled),a
+ 331  80F6
+ 332  80F6              ;reset switch sound variable
+ 333  80F6 32 2E FA                 ld (switch_sound ),a
+ 334  80F9
+ 335  80F9              ;need to set the player start position now.  - MOVED TO EXIT_ANIM ROUTINE
+ 336  80F9
+ 337  80F9               ;           ld a,(cur_map)
+ 338  80F9               ;           dec a               ;point to our next map
+ 339  80F9               ;           call set_map      ;set our map
+ 340  80F9               ;           ld l,01              ;top left of maze
+ 341  80F9               ;           ld (player_pos),hl
+ 342  80F9
+ 343  80F9              ;draw exit animation
+ 344  80F9                          ;we moved forward and overwrote the door so redraw it
+ 345  80F9 ED 91 07 03              nextreg 7,3             ;set cpu speed to max
+ 346  80FD
+ 347  80FD CD 00 C6                 call exit_anim
+ 348  8100
+ 349  8100              ;**********************************************************************
+ 350  8100              ;GAME EXIT CHECK
+ 351  8100              ;check if we got past level 0 - if so exit to BASIC
+ 352  8100 3A 30 FA                 ld a,(game_exit)
+ 353  8103 FE 00                    cp 0
+ 354  8105 C8                       ret z
+ 355  8106              ;**********************************************************************
+ 356  8106
+ 357  8106                          ;now flip the screen into the visible screen
+ 358  8106 CD B5 81                 call FlipULABuffers_peter
+ 359  8109
+ 360  8109 C3 70 80                 jp wait4key             ;screen is already drawn so dont draw it again.
+ 361  810C              ;--------------------------------------------------------------------------------
+ 362  810C              cont_a:
+ 363  810C              ;1st, check if we are trying to flick the switch on
+ 364  810C              ;so, is the door open?
+ 365  810C
+ 366  810C              ; switch will always face NORTH.
+ 367  810C              ; show switch type = 0 = off, 1 = on
+ 368  810C
+ 369  810C                           ;are we facing south?
+ 370  810C 3A 08 FA                  ld a,(player_dir)
+ 371  810F D6 02                     sub 2                  ;2 = south
+ 372  8111 20 17                     jr nz,cont_b           ;if not, just continue in the normal way
+ 373  8113
+ 374  8113 2A 00 FA                  ld hl,(player_pos)
+ 375  8116 11 10 00                  ld de, $0010           ; (+16) to go to next line in front of us - south
+ 376  8119 19                        add hl,de
+ 377  811A 7E                        ld a,(hl)
+ 378  811B FE E0                     cp _ms                 ;is it our SWITCH block?
+ 379  811D 20 0B                     jr nz,cont_b           ;if not, just continue in the normal way
+ 380  811F                           ;YES its a switch - so mark it as switched on
+ 381  811F 3E 01                     ld a,1
+ 382  8121 32 2B FA                  ld (switch_pulled),a
+ 383  8124
+ 384  8124              ;draw switch
+ 385  8124 CD 2C 8F                 call draw_switch      ;draw our switch
+ 386  8127 C3 28 80                 jp main_loop          ;jump to our next level
+ 387  812A              ;--------------------------------------------------------------------------------
+ 388  812A
+ 389  812A 3A 02 FA     cont_b:       ld a,(maxview)         ;if our maximum view depth = 0 ie we are
+ 390  812D                                                  ;in front of a wall face
+ 391  812D                                                  ;then do nothing
+ 392  812D 3C                         inc a
+ 393  812E 3D                         dec a
+ 394  812F CA 70 80                   jp z,wait4key
+ 395  8132
+ 396  8132 CD B7 8E                   call load_walk        ; get walk forward value to add
+ 397  8135 2A 00 FA                   ld hl,(player_pos)    ;get our current position
+ 398  8138 7C                         ld a,h                ;save our current H value for comparing later
+ 399  8139 19                         add hl,de              ;move our position forward in our view
+ 400  813A
+ 401  813A BC                         cp h              ;have we crossed 256 byte boundry?
+ 402  813B C2 28 80                   jp nz,main_loop   ;we have exited our boundry so dont
+ 403  813E                                              ;move our view anywhere.
+ 404  813E                            ;now test if l=0
+ 405  813E              ;              ld a,l
+ 406  813E 2C                         inc l
+ 407  813F 2D                         dec l             ;are we at position 0? Exit if yes and do nothing
+ 408  8140                            ;cp 0
+ 409  8140 CA 28 80                   jp z,main_loop   ;we are at location 0 in the maze, so, again do nothing
+ 410  8143                                              ;and just exit so we stay at position 1
+ 411  8143
+ 412  8143                            ;we ARE at the bottom row so DO NOT MOVE FORWARD
+ 413  8143 22 00 FA                   ld (player_pos),hl
+ 414  8146 C3 28 80                   jp main_loop          ;continue to the game loop
+ 415  8149
+ 416  8149
+ 417  8149              ;we get here as we are not at the bottom of the maze.
+ 418  8149 FE 10        move_1:       cp 16                 ;are we at the top edge of the maze?
+ 419  814B D2 28 80                   jp nc,main_loop
+ 420  814E 22 00 FA                   ld (player_pos),hl    ;save our new position
+ 421  8151
+ 422  8151              ;we are at the TOP of the maze so dont saaveour addition to HL
+ 423  8151 C3 28 80                   jp main_loop          ;continue to the game loop
+ 424  8154
+ 425  8154              ;##########################################################################
+ 426  8154              ;Pause routine for slowing down the game
+ 427  8154
+ 428  8154 E5           pause:        push hl
+ 429  8155 C5                         push bc
+ 430  8156 06 01                      ld b,1           ;delay loop
+ 431  8158              loop19:       ;halt             ;no interrupts!
+ 432  8158 21 10 27                   ld hl,10000
+ 433  815B 2B           abc:          dec hl
+ 434  815C 7C                         ld a,h
+ 435  815D 3D                         dec a
+ 436  815E                            ;dec h
+ 437  815E 20 FB                      jr nz,abc
+ 438  8160 05                         dec b
+ 439  8161 C2 58 81                   jp nz,loop19
+ 440  8164 C1                         pop bc
+ 441  8165 E1                         pop hl
+ 442  8166 C9                         ret
+ 443  8167              ;##########################################################################
+ 444  8167
+ 445  8167              ;load other programs
+ 446  8167
+ 447  8167              ;for SJASMPLUS
  448  8167
- 449  8167              ;load other programs
- 450  8167
- 451  8167              ;for SJASMPLUS
- 452  8167
- 453  8167                  INCLUDE "1-rd3dmazeV6.asm"  ; init and maze itself
+ 449  8167                  INCLUDE "1-rd3dmazeV6.asm"  ; init and maze itself
 # file opened: src/1-rd3dmazeV6.asm
    1+ 8167
    2+ 8167              ;variables
@@ -1588,7 +1584,7 @@
  797+ 8B2C
  798+ 8B2C
 # file closed: src/1-rd3dmazeV6.asm
- 454  8B2C                  INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
+ 450  8B2C                  INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
 # file opened: src/2-rd3dmazeV6.asm
    1+ 8B2C
    2+ 8B2C              ;##############################################
@@ -1761,7 +1757,7 @@
  169+ 8C19 20 E5                jr nz,rep3        ;exit when a=0
  170+ 8C1B
  171+ 8C1B ED 91 69 00          nextreg $69,0       ;turn off screen buffering so we write directly to the screen
- 172+ 8C1F 3E 0E                ld a,14
+ 172+ 8C1F 3E 0A                ld a, 10;14
  173+ 8C21 32 B4 81             ld (ULABank),a    ;tell the flip ula routine which page is being viewed
  174+ 8C24                      ;set min speed!
  175+ 8C24 ED 91 07 00          nextreg 7,0
@@ -2125,7 +2121,7 @@
  526+ 8D9F C9           q1:           ret
  527+ 8DA0
 # file closed: src/2-rd3dmazeV6.asm
- 455  8DA0                  INCLUDE "3-rd3dmazeV6.asm" ; check walls in front of player
+ 451  8DA0                  INCLUDE "3-rd3dmazeV6.asm" ; check walls in front of player
 # file opened: src/3-rd3dmazeV6.asm
    1+ 8DA0
    2+ 8DA0
@@ -2557,7 +2553,7 @@
  428+ 8F74
  429+ 8F74
 # file closed: src/3-rd3dmazeV6.asm
- 456  8F74                  INCLUDE "4-rd3dmazeV6.asm" ; draw left side of maze
+ 452  8F74                  INCLUDE "4-rd3dmazeV6.asm" ; draw left side of maze
 # file opened: src/4-rd3dmazeV6.asm
    1+ 8F74
    2+ 8F74              ;============================================
@@ -4754,7 +4750,7 @@
 2193+ 9716 C9                   ret
 2194+ 9717
 # file closed: src/4-rd3dmazeV6.asm
- 457  9717                  INCLUDE "5-rd3dmazeV6.asm" ; draw wall in front of player+setup right part of screen
+ 453  9717                  INCLUDE "5-rd3dmazeV6.asm" ; draw wall in front of player+setup right part of screen
 # file opened: src/5-rd3dmazeV6.asm
    1+ 9717
    2+ 9717
@@ -5521,7 +5517,7 @@
  754+ 9B8A
  755+ 9B8A
 # file closed: src/5-rd3dmazeV6.asm
- 458  9B8A                  INCLUDE "6-rd3dmazeV6.asm" ; draw right side of maze
+ 454  9B8A                  INCLUDE "6-rd3dmazeV6.asm" ; draw right side of maze
 # file opened: src/6-rd3dmazeV6.asm
    1+ 9B8A
    2+ 9B8A              ;############################################
@@ -7445,7 +7441,7 @@
 1920+ A272 C9                   ret                     ;return to main program
 1921+ A273
 # file closed: src/6-rd3dmazeV6.asm
- 459  A273                  include 7-rd3dmazeV6.asm    ;the maze itself and other routines
+ 455  A273                  include 7-rd3dmazeV6.asm    ;the maze itself and other routines
 # file opened: src/7-rd3dmazeV6.asm
    1+ A273              ;this is the maze data and colour exit routine
    2+ A273              ;also the screen char memory and colours
@@ -8972,884 +8968,884 @@
  755+ C7C0
  756+ C7C0
 # file closed: src/7-rd3dmazeV6.asm
+ 456  C7C0
+ 457  C7C0              ;moved 2 to here as it was causing a memory overwrite.
+ 458  C7C0                ;  INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
+ 459  C7C0              ;#####################################################
  460  C7C0
- 461  C7C0              ;moved 2 to here as it was causing a memory overwrite.
- 462  C7C0                ;  INCLUDE "2-rd3dmazeV6.asm" ; draw maze on screen, player direction,
- 463  C7C0              ;#####################################################
- 464  C7C0
- 465  C7C0
- 466  C7C0              ;###################################################
- 467  C7C0              ; Get Keystroke Routine from Your Sinclair Magazine
- 468  C7C0              ; From Your Sinclair #22 (Oct.1987)
- 469  C7C0              ;###################################################
- 470  C7C0
- 471  C7C0
- 472  C7C0              get_keys:
- 473  C7C0               ;
- 474  C7C0               ;      YS_KEYS
- 475  C7C0               ;
- 476  C7C0               ;A,HL,DE corrupt
- 477  C7C0               ;B=0, key in C
- 478  C7C0
+ 461  C7C0
+ 462  C7C0              ;###################################################
+ 463  C7C0              ; Get Keystroke Routine from Your Sinclair Magazine
+ 464  C7C0              ; From Your Sinclair #22 (Oct.1987)
+ 465  C7C0              ;###################################################
+ 466  C7C0
+ 467  C7C0
+ 468  C7C0              get_keys:
+ 469  C7C0               ;
+ 470  C7C0               ;      YS_KEYS
+ 471  C7C0               ;
+ 472  C7C0               ;A,HL,DE corrupt
+ 473  C7C0               ;B=0, key in C
+ 474  C7C0
+ 475  C7C0
+ 476  C7C0               ;Keyboard Scanning
+ 477  C7C0               ;by Pete Cooke
+ 478  C7C0               ;from Your Sinclair #22 (Oct.1987)
  479  C7C0
- 480  C7C0               ;Keyboard Scanning
- 481  C7C0               ;by Pete Cooke
- 482  C7C0               ;from Your Sinclair #22 (Oct.1987)
- 483  C7C0
- 484  C7C0               ;prog for Your Sinclair
- 485  C7C0               ;
- 486  C7C0               ;file for Hisoft GENS
- 487  C7C0               ;assembler but should
- 488  C7C0               ;be suitable for most
- 489  C7C0               ;assemblers on the market
+ 480  C7C0               ;prog for Your Sinclair
+ 481  C7C0               ;
+ 482  C7C0               ;file for Hisoft GENS
+ 483  C7C0               ;assembler but should
+ 484  C7C0               ;be suitable for most
+ 485  C7C0               ;assemblers on the market
+ 486  C7C0               ;
+ 487  C7C0               ;Reads the keyboard
+ 488  C7C0               ;Returns with C
+ 489  C7C0               ;holding L/R/U/D/F
  490  C7C0               ;
- 491  C7C0               ;Reads the keyboard
- 492  C7C0               ;Returns with C
- 493  C7C0               ;holding L/R/U/D/F
- 494  C7C0               ;
- 495  C7C0               ;bit 4,C left
- 496  C7C0               ;bit 3,C right
- 497  C7C0               ;bit 2,C up
- 498  C7C0               ;bit 1,C down
- 499  C7C0               ;bit 0,C fire
- 500  C7C0               ;
- 501  C7C0               ;bit set to 1 if pressed
- 502  C7C0               ;
- 503  C7C0               ;keys are chosen by
- 504  C7C0               ;values in KEYTAB
- 505  C7C0               ;
- 506  C7C0 21 07 C8     readke  ld   hl,keytab
- 507  C7C3 01 00 06             ld   bc,$0600
- 508  C7C6               ;
- 509  C7C6               ;6 keys to read
- 510  C7C6               ;
- 511  C7C6 7E           read_1  ld   a,(hl)
- 512  C7C7 1F                   rra
- 513  C7C8 1F                   rra
- 514  C7C9 E6 1E                and  $1e
- 515  C7CB 5F                   ld   e,a
- 516  C7CC 16 00                ld   d,0
- 517  C7CE               ;
- 518  C7CE               ;2*the row number
- 519  C7CE               ;
- 520  C7CE 7E                   ld   a,(hl)
- 521  C7CF 23                   inc  hl
- 522  C7D0 E5                   push hl
- 523  C7D1               ;
- 524  C7D1               ;save place in KEYTAB
- 525  C7D1               ;
- 526  C7D1 21 F5 C7             ld   hl,keyadd
- 527  C7D4 19                   add  hl,de
- 528  C7D5 57                   ld   d,a
- 529  C7D6               ;
- 530  C7D6               ;index port addresses
- 531  C7D6               ;
- 532  C7D6 C5                   push bc
- 533  C7D7 4E                   ld   c,(hl)
- 534  C7D8 23                   inc  hl
- 535  C7D9 46                   ld   b,(hl)
- 536  C7DA ED 78                in   a,(c)
- 537  C7DC 04                   inc  b
- 538  C7DD 05                   dec  b
- 539  C7DE 28 01                jr   z,read_2
- 540  C7E0 2F                   cpl
- 541  C7E1 5F           read_2  ld   e,a
+ 491  C7C0               ;bit 4,C left
+ 492  C7C0               ;bit 3,C right
+ 493  C7C0               ;bit 2,C up
+ 494  C7C0               ;bit 1,C down
+ 495  C7C0               ;bit 0,C fire
+ 496  C7C0               ;
+ 497  C7C0               ;bit set to 1 if pressed
+ 498  C7C0               ;
+ 499  C7C0               ;keys are chosen by
+ 500  C7C0               ;values in KEYTAB
+ 501  C7C0               ;
+ 502  C7C0 21 07 C8     readke  ld   hl,keytab
+ 503  C7C3 01 00 06             ld   bc,$0600
+ 504  C7C6               ;
+ 505  C7C6               ;6 keys to read
+ 506  C7C6               ;
+ 507  C7C6 7E           read_1  ld   a,(hl)
+ 508  C7C7 1F                   rra
+ 509  C7C8 1F                   rra
+ 510  C7C9 E6 1E                and  $1e
+ 511  C7CB 5F                   ld   e,a
+ 512  C7CC 16 00                ld   d,0
+ 513  C7CE               ;
+ 514  C7CE               ;2*the row number
+ 515  C7CE               ;
+ 516  C7CE 7E                   ld   a,(hl)
+ 517  C7CF 23                   inc  hl
+ 518  C7D0 E5                   push hl
+ 519  C7D1               ;
+ 520  C7D1               ;save place in KEYTAB
+ 521  C7D1               ;
+ 522  C7D1 21 F5 C7             ld   hl,keyadd
+ 523  C7D4 19                   add  hl,de
+ 524  C7D5 57                   ld   d,a
+ 525  C7D6               ;
+ 526  C7D6               ;index port addresses
+ 527  C7D6               ;
+ 528  C7D6 C5                   push bc
+ 529  C7D7 4E                   ld   c,(hl)
+ 530  C7D8 23                   inc  hl
+ 531  C7D9 46                   ld   b,(hl)
+ 532  C7DA ED 78                in   a,(c)
+ 533  C7DC 04                   inc  b
+ 534  C7DD 05                   dec  b
+ 535  C7DE 28 01                jr   z,read_2
+ 536  C7E0 2F                   cpl
+ 537  C7E1 5F           read_2  ld   e,a
+ 538  C7E2               ;
+ 539  C7E2               ;read the port
+ 540  C7E2               ;and flip bits if not
+ 541  C7E2               ;Kempston
  542  C7E2               ;
- 543  C7E2               ;read the port
- 544  C7E2               ;and flip bits if not
- 545  C7E2               ;Kempston
- 546  C7E2               ;
- 547  C7E2 C1                   pop  bc
- 548  C7E3 E1                   pop  hl
- 549  C7E4               ;
- 550  C7E4               ;and get back BC+HL
- 551  C7E4               ;
- 552  C7E4 7A                   ld   a,d
- 553  C7E5 E6 07                and  $07
- 554  C7E7 28 05                jr   z,read_4
- 555  C7E9               ;
- 556  C7E9 CB 1B        read_3  rr   e
- 557  C7EB 3D                   dec  a
- 558  C7EC 20 FB                jr   nz,read_3
- 559  C7EE               ;
- 560  C7EE               ;rotate L so bit needed
- 561  C7EE               ;is in bit 0
- 562  C7EE               ;
- 563  C7EE CB 1B        read_4  rr   e
- 564  C7F0 CB 11                rl   c
- 565  C7F2               ;
- 566  C7F2               ;rotate the bit into C
- 567  C7F2               ;
- 568  C7F2 10 D2                djnz read_1
- 569  C7F4 C9                   ret
- 570  C7F5               ;
- 571  C7F5               ;exit B=0
- 572  C7F5               ;     C=keys
- 573  C7F5               ;
- 574  C7F5               ;A,HL,DE corrupt
+ 543  C7E2 C1                   pop  bc
+ 544  C7E3 E1                   pop  hl
+ 545  C7E4               ;
+ 546  C7E4               ;and get back BC+HL
+ 547  C7E4               ;
+ 548  C7E4 7A                   ld   a,d
+ 549  C7E5 E6 07                and  $07
+ 550  C7E7 28 05                jr   z,read_4
+ 551  C7E9               ;
+ 552  C7E9 CB 1B        read_3  rr   e
+ 553  C7EB 3D                   dec  a
+ 554  C7EC 20 FB                jr   nz,read_3
+ 555  C7EE               ;
+ 556  C7EE               ;rotate L so bit needed
+ 557  C7EE               ;is in bit 0
+ 558  C7EE               ;
+ 559  C7EE CB 1B        read_4  rr   e
+ 560  C7F0 CB 11                rl   c
+ 561  C7F2               ;
+ 562  C7F2               ;rotate the bit into C
+ 563  C7F2               ;
+ 564  C7F2 10 D2                djnz read_1
+ 565  C7F4 C9                   ret
+ 566  C7F5               ;
+ 567  C7F5               ;exit B=0
+ 568  C7F5               ;     C=keys
+ 569  C7F5               ;
+ 570  C7F5               ;A,HL,DE corrupt
+ 571  C7F5               ;
+ 572  C7F5               ;
+ 573  C7F5               ;port addresses of
+ 574  C7F5               ;the keyboard rows
  575  C7F5               ;
- 576  C7F5               ;
- 577  C7F5               ;port addresses of
- 578  C7F5               ;the keyboard rows
- 579  C7F5               ;
- 580  C7F5 FE F7 FE FB  keyadd dw 63486,64510,65022,65278,61438,57342,49150,32766
- 580  C7F9 FE FD FE FE
- 580  C7FD FE EF FE DF
- 580  C801 FE BF FE 7F
- 581  C805 1F 00                dw 31 ;*Kempston*
- 582  C807               ;
- 583  C807               ;
- 584  C807               ;KEYTAB holds the position
- 585  C807               ;of each key as
- 586  C807               ;1/2 row number*8 plus
- 587  C807               ;distance from the edge
- 588  C807               ;eg. P = 5*8+0
- 589  C807               ;    O = 5*8+1
- 590  C807               ;    Q = 1*8+0
- 591  C807               ;    4 = 0*8+3
- 592  C807               ;
- 593  C807 04 24 23 22  keytab db 0*8+4, 4*8+4, 4*8+3, 4*8+2, 4*8+0, 3*8+2
- 593  C80B 20 1A
- 594  C80D               ;           5     6     7      8       0     X
- 595  C80D
- 596  C80D               ;old bit values before adding the x key
- 597  C80D               ;;bit values: 1 = 0 fire
- 598  C80D               ;             2 = 8 right
- 599  C80D               ;             4 = 7 up
- 600  C80D               ;             8 = 6 down
- 601  C80D               ;            16 = 5 left
- 602  C80D              ;new key table
- 603  C80D              ;;bit values:
- 604  C80D               ;             1 = x
- 605  C80D               ;             2 =  0 fire
- 606  C80D               ;             4 = 5 left
- 607  C80D               ;             8 =  7 up
- 608  C80D               ;             16 = 6 down
- 609  C80D               ;             32 =  8 right
+ 576  C7F5 FE F7 FE FB  keyadd dw 63486,64510,65022,65278,61438,57342,49150,32766
+ 576  C7F9 FE FD FE FE
+ 576  C7FD FE EF FE DF
+ 576  C801 FE BF FE 7F
+ 577  C805 1F 00                dw 31 ;*Kempston*
+ 578  C807               ;
+ 579  C807               ;
+ 580  C807               ;KEYTAB holds the position
+ 581  C807               ;of each key as
+ 582  C807               ;1/2 row number*8 plus
+ 583  C807               ;distance from the edge
+ 584  C807               ;eg. P = 5*8+0
+ 585  C807               ;    O = 5*8+1
+ 586  C807               ;    Q = 1*8+0
+ 587  C807               ;    4 = 0*8+3
+ 588  C807               ;
+ 589  C807 04 24 23 22  keytab db 0*8+4, 4*8+4, 4*8+3, 4*8+2, 4*8+0, 3*8+2
+ 589  C80B 20 1A
+ 590  C80D               ;           5     6     7      8       0     X
+ 591  C80D
+ 592  C80D               ;old bit values before adding the x key
+ 593  C80D               ;;bit values: 1 = 0 fire
+ 594  C80D               ;             2 = 8 right
+ 595  C80D               ;             4 = 7 up
+ 596  C80D               ;             8 = 6 down
+ 597  C80D               ;            16 = 5 left
+ 598  C80D              ;new key table
+ 599  C80D              ;;bit values:
+ 600  C80D               ;             1 = x
+ 601  C80D               ;             2 =  0 fire
+ 602  C80D               ;             4 = 5 left
+ 603  C80D               ;             8 =  7 up
+ 604  C80D               ;             16 = 6 down
+ 605  C80D               ;             32 =  8 right
+ 606  C80D
+ 607  C80D
+ 608  C80D
+ 609  C80D
  610  C80D
- 611  C80D
- 612  C80D
- 613  C80D
- 614  C80D
- 615  C80D              ; keytab db 5*8+1,5*8+0,2*8+1,3*8+2,7*8+0
- 616  C80D               ;
- 617  C80D               ;set for O,P,S,X,space
- 618  C80D               ;
- 619  C80D               ;for a Kempston joystick
- 620  C80D               ;substitute
- 621  C80D               ;
- 622  C80D               ;       db 8*8+1,8*8+0,8*8+3,8*8+2,8*8+4
- 623  C80D               ;
- 624  C80D              ;end_k nop
- 625  C80D
- 626  C80D              ;##############################################
- 627  C80D              ;##############################################
- 628  C80D
- 629  C80D              ;set map - sets hl to start of map to draw
- 630  C80D              ;a holds the map number = 0 to 15
- 631  C80D
- 632  C80D              set_map:
- 633  C80D
- 634  C80D 21 00 A3             ld hl,map_0             ;start of map data 256 bytes each
- 635  C810 32 22 FA             ld (cur_map),a          ;save our cur map
- 636  C813 22 23 FA             ld (map_start),hl
- 637  C816
- 638  C816 3D                   dec a
- 639  C817 3C                   inc a                   ;exit if its map 0
- 640  C818
- 641  C818 7C                   ld a,h
- 642  C819 32 28 FA             ld (maze_highbyte),a
- 643  C81C C8                   ret z       ;if a is 0, just return for map_0
- 644  C81D
- 645  C81D 3A 22 FA             ld a,(cur_map)
- 646  C820 24           loop3   inc h                   ; times by 256
- 647  C821 3D                   dec a
- 648  C822 20 FC                jr nz, loop3
- 649  C824 22 23 FA             ld (map_start),hl
- 650  C827 7C                   ld a, h
- 651  C828 32 28 FA             ld (maze_highbyte),a
- 652  C82B C9                   ret
- 653  C82C              ;*******************************************************************
- 654  C82C              ;save and restore the contents of bank 14
- 655  C82C
- 656  C82C              save_bank_14:
- 657  C82C                      ;save the current bank in slot $57
- 658  C82C 3E 57                ld a,$57
- 659  C82E CD 8C 81             call readnextreg
- 660  C831 F5                   push af
- 661  C832 ED 91 57 20          nextreg $57,32       ;page in bank 32 to upper RAM
- 662  C836 ED 91 52 0E          nextreg $52,14       ;page in shadow RAM page
- 663  C83A 21 00 40             ld  hl,$4000
- 664  C83D 11 00 E0             ld  de,$e000
- 665  C840 01 00 20             ld  bc,8192
- 666  C843 7E                   ld a,(hl)
- 667  C844 12                   ld  (de),a
- 668  C845 ED B0                ldir
- 669  C847                      ;restore bank $57 bank  again
- 670  C847 F1                   pop af
- 671  C848 ED 92 57             nextreg $57,a
- 672  C84B ED 91 52 0A          nextreg $52,10       ;restore normal screen
- 673  C84F C9                   ret
- 674  C850
- 675  C850              restore_bank_14:
- 676  C850              ; break
- 677  C850                      ;save the current bank in slot $57
- 678  C850 3E 57                ld a,$57
- 679  C852 CD 8C 81             call readnextreg
- 680  C855 F5                   push af
- 681  C856 ED 91 57 20          nextreg $57,32       ;page in bank 32 to upper RAM
- 682  C85A ED 91 52 0E          nextreg $52,14       ;page in shadow RAM page
- 683  C85E 21 00 E0             ld  hl,$e000
- 684  C861 11 00 40             ld  de,$4000
- 685  C864 01 00 20             ld  bc,8192
- 686  C867 7E                   ld a,(hl)
- 687  C868 12                   ld  (de),a
- 688  C869 ED B0                ldir
- 689  C86B                      ;restore bank $57 bank  again
- 690  C86B F1                   pop af
- 691  C86C C9                   ret
- 692  C86D
- 693  C86D              ;*******************************************************************
- 694  C86D              ;return to Basic
- 695  C86D
- 696  C86D              ret_to_basic
- 697  C86D C5                       push bc         ;save our exit value
- 698  C86E
- 699  C86E CD 50 C8      call restore_bank_14
- 700  C871
- 701  C871              ;clear the real ULA screen
- 702  C871
- 703  C871 ED 91 50 0A              nextreg $50,10
- 704  C875                          ;clear the viewable display - $000 = $4000 at reg $52
- 705  C875 21 00 00                 ld  hl,$0000
- 706  C878 11 01 00                 ld  de,$0001
- 707  C87B 01 FF 17                 ld  bc,$17ff
- 708  C87E 36 00                    ld  (hl),0
- 709  C880 ED B0                    ldir
- 710  C882
- 711  C882                          ;make the attributes white paper and black ink
- 712  C882 36 00                    ld  (hl),0;56       ;white paper, black ink on standard ula
- 713  C884 01 FF 02                 ld  bc,$02FF
- 714  C887 ED B0                    ldir
- 715  C889 ED 91 50 FF              nextreg $50,$FF     ;restore reg $50
- 716  C88D ED 91 52 0A              nextreg $52,10      ;page in the real spectrum screen back into place in memory
- 717  C891
- 718  C891 ED 91 43 00              nextreg $43,$0      ;turn off ulanext and return to standard ULA colours
- 719  C895 ED 91 69 00              nextreg $69,0       ;bank in the correct screen to view
- 720  C899 C1                       pop bc              ;restore th exit value
- 721  C89A FB                       ei
- 722  C89B C9                       ret
- 723  C89C
- 724  C89C
- 725  C89C              ;#################################################################
- 726  C89C              ;Character screen reservation
- 727  C89C               ;       org $c000
- 728  C89C              ;char_screen:   block 768    ;view screen built here from characters
+ 611  C80D              ; keytab db 5*8+1,5*8+0,2*8+1,3*8+2,7*8+0
+ 612  C80D               ;
+ 613  C80D               ;set for O,P,S,X,space
+ 614  C80D               ;
+ 615  C80D               ;for a Kempston joystick
+ 616  C80D               ;substitute
+ 617  C80D               ;
+ 618  C80D               ;       db 8*8+1,8*8+0,8*8+3,8*8+2,8*8+4
+ 619  C80D               ;
+ 620  C80D              ;end_k nop
+ 621  C80D
+ 622  C80D              ;##############################################
+ 623  C80D              ;##############################################
+ 624  C80D
+ 625  C80D              ;set map - sets hl to start of map to draw
+ 626  C80D              ;a holds the map number = 0 to 15
+ 627  C80D
+ 628  C80D              set_map:
+ 629  C80D
+ 630  C80D 21 00 A3             ld hl,map_0             ;start of map data 256 bytes each
+ 631  C810 32 22 FA             ld (cur_map),a          ;save our cur map
+ 632  C813 22 23 FA             ld (map_start),hl
+ 633  C816
+ 634  C816 3D                   dec a
+ 635  C817 3C                   inc a                   ;exit if its map 0
+ 636  C818
+ 637  C818 7C                   ld a,h
+ 638  C819 32 28 FA             ld (maze_highbyte),a
+ 639  C81C C8                   ret z       ;if a is 0, just return for map_0
+ 640  C81D
+ 641  C81D 3A 22 FA             ld a,(cur_map)
+ 642  C820 24           loop3   inc h                   ; times by 256
+ 643  C821 3D                   dec a
+ 644  C822 20 FC                jr nz, loop3
+ 645  C824 22 23 FA             ld (map_start),hl
+ 646  C827 7C                   ld a, h
+ 647  C828 32 28 FA             ld (maze_highbyte),a
+ 648  C82B C9                   ret
+ 649  C82C              ;*******************************************************************
+ 650  C82C              ;save and restore the contents of bank 14
+ 651  C82C
+ 652  C82C              save_bank_14:
+ 653  C82C                      ;save the current bank in slot $57
+ 654  C82C 3E 57                ld a,$57
+ 655  C82E CD 8C 81             call readnextreg
+ 656  C831 F5                   push af
+ 657  C832 ED 91 57 20          nextreg $57,32       ;page in bank 32 to upper RAM
+ 658  C836 ED 91 52 0E          nextreg $52,14       ;page in shadow RAM page
+ 659  C83A 21 00 40             ld  hl,$4000
+ 660  C83D 11 00 E0             ld  de,$e000
+ 661  C840 01 00 20             ld  bc,8192
+ 662  C843 7E                   ld a,(hl)
+ 663  C844 12                   ld  (de),a
+ 664  C845 ED B0                ldir
+ 665  C847                      ;restore bank $57 bank  again
+ 666  C847 F1                   pop af
+ 667  C848 ED 92 57             nextreg $57,a
+ 668  C84B ED 91 52 0A          nextreg $52,10       ;restore normal screen
+ 669  C84F C9                   ret
+ 670  C850
+ 671  C850              restore_bank_14:
+ 672  C850              ; break
+ 673  C850                      ;save the current bank in slot $57
+ 674  C850 3E 57                ld a,$57
+ 675  C852 CD 8C 81             call readnextreg
+ 676  C855 F5                   push af
+ 677  C856 ED 91 57 20          nextreg $57,32       ;page in bank 32 to upper RAM
+ 678  C85A ED 91 52 0E          nextreg $52,14       ;page in shadow RAM page
+ 679  C85E 21 00 E0             ld  hl,$e000
+ 680  C861 11 00 40             ld  de,$4000
+ 681  C864 01 00 20             ld  bc,8192
+ 682  C867 7E                   ld a,(hl)
+ 683  C868 12                   ld  (de),a
+ 684  C869 ED B0                ldir
+ 685  C86B                      ;restore bank $57 bank  again
+ 686  C86B F1                   pop af
+ 687  C86C C9                   ret
+ 688  C86D
+ 689  C86D              ;*******************************************************************
+ 690  C86D              ;return to Basic
+ 691  C86D
+ 692  C86D              ret_to_basic
+ 693  C86D C5                       push bc         ;save our exit value
+ 694  C86E
+ 695  C86E CD 50 C8      call restore_bank_14
+ 696  C871
+ 697  C871              ;clear the real ULA screen
+ 698  C871
+ 699  C871 ED 91 50 0A              nextreg $50,10
+ 700  C875                          ;clear the viewable display - $000 = $4000 at reg $52
+ 701  C875 21 00 00                 ld  hl,$0000
+ 702  C878 11 01 00                 ld  de,$0001
+ 703  C87B 01 FF 17                 ld  bc,$17ff
+ 704  C87E 36 00                    ld  (hl),0
+ 705  C880 ED B0                    ldir
+ 706  C882
+ 707  C882                          ;make the attributes white paper and black ink
+ 708  C882 36 00                    ld  (hl),0;56       ;white paper, black ink on standard ula
+ 709  C884 01 FF 02                 ld  bc,$02FF
+ 710  C887 ED B0                    ldir
+ 711  C889 ED 91 50 FF              nextreg $50,$FF     ;restore reg $50
+ 712  C88D ED 91 52 0A              nextreg $52,10      ;page in the real spectrum screen back into place in memory
+ 713  C891
+ 714  C891 ED 91 43 00              nextreg $43,$0      ;turn off ulanext and return to standard ULA colours
+ 715  C895 ED 91 69 00              nextreg $69,0       ;bank in the correct screen to view
+ 716  C899 C1                       pop bc              ;restore th exit value
+ 717  C89A FB                       ei
+ 718  C89B C9                       ret
+ 719  C89C
+ 720  C89C
+ 721  C89C              ;#################################################################
+ 722  C89C              ;Character screen reservation
+ 723  C89C               ;       org $c000
+ 724  C89C              ;char_screen:   block 768    ;view screen built here from characters
+ 725  C89C
+ 726  C89C              ;attr_screen:   block 768    ;colours held here for door animation
+ 727  C89C
+ 728  C89C              ;################################################
  729  C89C
- 730  C89C              ;attr_screen:   block 768    ;colours held here for door animation
- 731  C89C
- 732  C89C              ;################################################
- 733  C89C
- 734  C89C
- 735  C89C              ;##############################################
- 736  C89C              ; Alternate Character set
- 737  C89C              ;from https://www.jimblimey.com/blog/24-zx-spectrum-fonts/
- 738  C89C              ;##############################################
- 739  C89C              charset_1:
- 740  C89C 00 00 00 00    defb 0,0,0,0,0,0,0,0
- 740  C8A0 00 00 00 00
- 741  C8A4 10 38 38 38    defb 16,56,56,56,16,0,16,0
- 741  C8A8 10 00 10 00
- 742  C8AC 66 33 33 00    defb 102,51,51,0,0,0,0,0
- 742  C8B0 00 00 00 00
- 743  C8B4 66 66 FF 66    defb 102,102,255,102,102,255,102,102
- 743  C8B8 66 FF 66 66
- 744  C8BC 14 7E D4 7E    defb 20,126,212,126,149,126,20,0
- 744  C8C0 95 7E 14 00
- 745  C8C4 60 94 68 10    defb 96,148,104,16,44,82,140,0
- 745  C8C8 2C 52 8C 00
- 746  C8CC 30 48 30 48    defb 48,72,48,72,142,140,120,0
- 746  C8D0 8E 8C 78 00
- 747  C8D4 0C 0C 18 00    defb 12,12,24,0,0,0,0,0
- 747  C8D8 00 00 00 00
- 748  C8DC 01 02 04 04    defb 1,2,4,4,4,4,2,1
- 748  C8E0 04 04 02 01
- 749  C8E4 80 40 20 20    defb 128,64,32,32,32,32,64,128
- 749  C8E8 20 20 40 80
- 750  C8EC 00 54 38 FE    defb 0,84,56,254,56,84,0,0
- 750  C8F0 38 54 00 00
- 751  C8F4 00 18 18 7E    defb 0,24,24,126,24,24,0,0
- 751  C8F8 18 18 00 00
- 752  C8FC 00 00 00 00    defb 0,0,0,0,0,0,48,96
- 752  C900 00 00 30 60
- 753  C904 00 00 00 7E    defb 0,0,0,126,0,0,0,0
- 753  C908 00 00 00 00
- 754  C90C 00 00 00 00    defb 0,0,0,0,0,0,48,0
- 754  C910 00 00 30 00
- 755  C914 01 02 04 08    defb 1,2,4,8,16,32,64,128
- 755  C918 10 20 40 80
- 756  C91C 7C 86 8A 92    defb 124,134,138,146,162,194,124,0
- 756  C920 A2 C2 7C 00
- 757  C924 10 30 70 10    defb 16,48,112,16,16,16,124,0
- 757  C928 10 10 7C 00
- 758  C92C 78 84 08 30    defb 120,132,8,48,64,128,252,0
- 758  C930 40 80 FC 00
- 759  C934 78 84 04 38    defb 120,132,4,56,4,132,120,0
- 759  C938 04 84 78 00
- 760  C93C 80 44 48 48    defb 128,68,72,72,252,8,8,0
- 760  C940 FC 08 08 00
- 761  C944 FE 80 80 7C    defb 254,128,128,124,2,130,124,0
- 761  C948 02 82 7C 00
- 762  C94C 7A 84 80 BC    defb 122,132,128,188,194,130,124,0
- 762  C950 C2 82 7C 00
- 763  C954 FE 84 08 10    defb 254,132,8,16,56,16,16,0
- 763  C958 38 10 10 00
- 764  C95C 7C 82 7C 82    defb 124,130,124,130,130,130,124,0
- 764  C960 82 82 7C 00
- 765  C964 7C 82 86 7A    defb 124,130,134,122,2,130,124,0
- 765  C968 02 82 7C 00
- 766  C96C 00 30 00 00    defb 0,48,0,0,0,48,0,0
- 766  C970 00 30 00 00
- 767  C974 00 30 00 00    defb 0,48,0,0,0,48,32,0
- 767  C978 00 30 20 00
- 768  C97C 08 10 20 40    defb 8,16,32,64,32,16,8,0
- 768  C980 20 10 08 00
- 769  C984 00 00 7E 00    defb 0,0,126,0,126,0,0,0
- 769  C988 7E 00 00 00
- 770  C98C 20 10 08 04    defb 32,16,8,4,8,16,32,0
- 770  C990 08 10 20 00
- 771  C994 7C 82 04 08    defb 124,130,4,8,16,0,16,0
- 771  C998 10 00 10 00
- 772  C99C 7C 82 9A AA    defb 124,130,154,170,170,158,124,0
- 772  C9A0 AA 9E 7C 00
- 773  C9A4 F8 44 42 FE    defb 248,68,66,254,66,66,198,0
- 773  C9A8 42 42 C6 00
- 774  C9AC FC 42 42 FC    defb 252,66,66,252,66,66,252,0
- 774  C9B0 42 42 FC 00
- 775  C9B4 7A 84 80 80    defb 122,132,128,128,128,130,124,0
- 775  C9B8 80 82 7C 00
- 776  C9BC FC 42 42 42    defb 252,66,66,66,66,66,252,0
- 776  C9C0 42 42 FC 00
- 777  C9C4 FE 42 40 70    defb 254,66,64,112,192,66,254,0
- 777  C9C8 C0 42 FE 00
- 778  C9CC FE 42 40 70    defb 254,66,64,112,192,64,224,0
- 778  C9D0 C0 40 E0 00
- 779  C9D4 7A 84 80 80    defb 122,132,128,128,156,130,126,2
- 779  C9D8 9C 82 7E 02
- 780  C9DC 82 44 44 5E    defb 130,68,68,94,244,68,130,0
- 780  C9E0 F4 44 82 00
- 781  C9E4 10 08 08 08    defb 16,8,8,8,8,8,4,0
- 781  C9E8 08 08 04 00
- 782  C9EC 7E 08 04 04    defb 126,8,4,4,4,132,120,0
- 782  C9F0 04 84 78 00
- 783  C9F4 CC 44 48 F0    defb 204,68,72,240,72,68,198,0
- 783  C9F8 48 44 C6 00
- 784  C9FC C0 40 40 40    defb 192,64,64,64,64,66,254,0
- 784  CA00 40 42 FE 00
- 785  CA04 C6 6A 5A 4A    defb 198,106,90,74,74,66,198,0
- 785  CA08 4A 42 C6 00
- 786  CA0C CC 64 54 54    defb 204,100,84,84,84,84,204,0
- 786  CA10 54 54 CC 00
- 787  CA14 78 84 84 84    defb 120,132,132,132,132,132,120,0
- 787  CA18 84 84 78 00
- 788  CA1C F8 44 44 F8    defb 248,68,68,248,64,64,224,0
- 788  CA20 40 40 E0 00
- 789  CA24 78 84 84 84    defb 120,132,132,132,132,140,125,2
- 789  CA28 84 8C 7D 02
- 790  CA2C FC 42 42 FC    defb 252,66,66,252,66,66,198,0
- 790  CA30 42 42 C6 00
- 791  CA34 74 88 80 78    defb 116,136,128,120,4,132,120,0
- 791  CA38 04 84 78 00
- 792  CA3C 7C 54 10 10    defb 124,84,16,16,16,16,48,0
- 792  CA40 10 10 30 00
- 793  CA44 C6 44 44 82    defb 198,68,68,130,130,130,124,0
- 793  CA48 82 82 7C 00
- 794  CA4C CC 44 44 44    defb 204,68,68,68,68,40,16,0
- 794  CA50 44 28 10 00
- 795  CA54 C6 42 42 4A    defb 198,66,66,74,90,106,204,0
- 795  CA58 5A 6A CC 00
- 796  CA5C 82 44 28 10    defb 130,68,40,16,40,68,130,0
- 796  CA60 28 44 82 00
- 797  CA64 CC 44 44 38    defb 204,68,68,56,16,16,48,0
- 797  CA68 10 10 30 00
- 798  CA6C FE 84 08 10    defb 254,132,8,16,32,66,254,0
- 798  CA70 20 42 FE 00
- 799  CA74 1C 10 10 10    defb 28,16,16,16,16,16,28,0
- 799  CA78 10 10 1C 00
- 800  CA7C 80 40 20 10    defb 128,64,32,16,8,4,2,1
- 800  CA80 08 04 02 01
- 801  CA84 38 08 08 08    defb 56,8,8,8,8,8,56,0
- 801  CA88 08 08 38 00
- 802  CA8C 00 00 10 38    defb 0,0,16,56,108,198,0,0
- 802  CA90 6C C6 00 00
- 803  CA94 00 00 00 00    defb 0,0,0,0,0,0,0,255
- 803  CA98 00 00 00 FF
- 804  CA9C 30 30 18 00    defb 48,48,24,0,0,0,0,0
- 804  CAA0 00 00 00 00
- 805  CAA4 00 00 7A 04    defb 0,0,122,4,124,132,122,0
- 805  CAA8 7C 84 7A 00
- 806  CAAC 80 40 40 5C    defb 128,64,64,92,98,66,188,0
- 806  CAB0 62 42 BC 00
- 807  CAB4 00 00 7A 84    defb 0,0,122,132,128,130,124,0
- 807  CAB8 80 82 7C 00
- 808  CABC 02 04 74 8C    defb 2,4,116,140,132,132,122,0
- 808  CAC0 84 84 7A 00
- 809  CAC4 00 00 BC 42    defb 0,0,188,66,124,64,62,0
- 809  CAC8 7C 40 3E 00
- 810  CACC 34 48 40 E0    defb 52,72,64,224,64,64,128,0
- 810  CAD0 40 40 80 00
- 811  CAD4 00 00 7A 84    defb 0,0,122,132,140,116,4,120
- 811  CAD8 8C 74 04 78
- 812  CADC 80 40 78 44    defb 128,64,120,68,68,68,136,0
- 812  CAE0 44 44 88 00
- 813  CAE4 10 00 10 08    defb 16,0,16,8,8,8,4,0
- 813  CAE8 08 08 04 00
- 814  CAEC 00 10 00 10    defb 0,16,0,16,8,8,136,112
- 814  CAF0 08 08 88 70
- 815  CAF4 C0 40 48 50    defb 192,64,72,80,224,80,200,0
- 815  CAF8 E0 50 C8 00
- 816  CAFC 30 10 10 10    defb 48,16,16,16,16,16,56,0
- 816  CB00 10 10 38 00
- 817  CB04 00 00 AC 54    defb 0,0,172,84,84,68,204,0
- 817  CB08 54 44 CC 00
- 818  CB0C 00 00 B8 44    defb 0,0,184,68,68,68,204,0
- 818  CB10 44 44 CC 00
- 819  CB14 00 00 78 84    defb 0,0,120,132,132,132,120,0
- 819  CB18 84 84 78 00
- 820  CB1C 00 00 B8 44    defb 0,0,184,68,68,120,64,128
- 820  CB20 44 78 40 80
- 821  CB24 00 00 74 88    defb 0,0,116,136,136,120,4,2
- 821  CB28 88 78 04 02
- 822  CB2C 00 00 B0 48    defb 0,0,176,72,64,64,64,0
- 822  CB30 40 40 40 00
- 823  CB34 00 00 78 80    defb 0,0,120,128,112,8,240,0
- 823  CB38 70 08 F0 00
- 824  CB3C 00 20 10 7C    defb 0,32,16,124,16,16,8,0
- 824  CB40 10 10 08 00
- 825  CB44 00 00 90 48    defb 0,0,144,72,132,132,120,0
- 825  CB48 84 84 78 00
- 826  CB4C 00 00 82 44    defb 0,0,130,68,68,40,16,0
- 826  CB50 44 28 10 00
- 827  CB54 00 00 84 42    defb 0,0,132,66,82,106,70,0
- 827  CB58 52 6A 46 00
- 828  CB5C 00 00 88 50    defb 0,0,136,80,32,80,136,0
- 828  CB60 20 50 88 00
- 829  CB64 00 00 82 44    defb 0,0,130,68,68,60,4,120
- 829  CB68 44 3C 04 78
- 830  CB6C 00 00 7C 88    defb 0,0,124,136,48,68,248,0
- 830  CB70 30 44 F8 00
- 831  CB74 0E 10 10 60    defb 14,16,16,96,16,16,14,0
- 831  CB78 10 10 0E 00
- 832  CB7C 18 18 18 00    defb 24,24,24,0,24,24,24,0
- 832  CB80 18 18 18 00
- 833  CB84 E0 10 10 0C    defb 224,16,16,12,16,16,224,0
- 833  CB88 10 10 E0 00
- 834  CB8C 00 00 70 9A    defb 0,0,112,154,12,0,0,0
- 834  CB90 0C 00 00 00
- 835  CB94 00 00 18 3C    defb 0,0,24,60,102,255,0,0
- 835  CB98 66 FF 00 00
+ 730  C89C
+ 731  C89C              ;##############################################
+ 732  C89C              ; Alternate Character set
+ 733  C89C              ;from https://www.jimblimey.com/blog/24-zx-spectrum-fonts/
+ 734  C89C              ;##############################################
+ 735  C89C              charset_1:
+ 736  C89C 00 00 00 00    defb 0,0,0,0,0,0,0,0
+ 736  C8A0 00 00 00 00
+ 737  C8A4 10 38 38 38    defb 16,56,56,56,16,0,16,0
+ 737  C8A8 10 00 10 00
+ 738  C8AC 66 33 33 00    defb 102,51,51,0,0,0,0,0
+ 738  C8B0 00 00 00 00
+ 739  C8B4 66 66 FF 66    defb 102,102,255,102,102,255,102,102
+ 739  C8B8 66 FF 66 66
+ 740  C8BC 14 7E D4 7E    defb 20,126,212,126,149,126,20,0
+ 740  C8C0 95 7E 14 00
+ 741  C8C4 60 94 68 10    defb 96,148,104,16,44,82,140,0
+ 741  C8C8 2C 52 8C 00
+ 742  C8CC 30 48 30 48    defb 48,72,48,72,142,140,120,0
+ 742  C8D0 8E 8C 78 00
+ 743  C8D4 0C 0C 18 00    defb 12,12,24,0,0,0,0,0
+ 743  C8D8 00 00 00 00
+ 744  C8DC 01 02 04 04    defb 1,2,4,4,4,4,2,1
+ 744  C8E0 04 04 02 01
+ 745  C8E4 80 40 20 20    defb 128,64,32,32,32,32,64,128
+ 745  C8E8 20 20 40 80
+ 746  C8EC 00 54 38 FE    defb 0,84,56,254,56,84,0,0
+ 746  C8F0 38 54 00 00
+ 747  C8F4 00 18 18 7E    defb 0,24,24,126,24,24,0,0
+ 747  C8F8 18 18 00 00
+ 748  C8FC 00 00 00 00    defb 0,0,0,0,0,0,48,96
+ 748  C900 00 00 30 60
+ 749  C904 00 00 00 7E    defb 0,0,0,126,0,0,0,0
+ 749  C908 00 00 00 00
+ 750  C90C 00 00 00 00    defb 0,0,0,0,0,0,48,0
+ 750  C910 00 00 30 00
+ 751  C914 01 02 04 08    defb 1,2,4,8,16,32,64,128
+ 751  C918 10 20 40 80
+ 752  C91C 7C 86 8A 92    defb 124,134,138,146,162,194,124,0
+ 752  C920 A2 C2 7C 00
+ 753  C924 10 30 70 10    defb 16,48,112,16,16,16,124,0
+ 753  C928 10 10 7C 00
+ 754  C92C 78 84 08 30    defb 120,132,8,48,64,128,252,0
+ 754  C930 40 80 FC 00
+ 755  C934 78 84 04 38    defb 120,132,4,56,4,132,120,0
+ 755  C938 04 84 78 00
+ 756  C93C 80 44 48 48    defb 128,68,72,72,252,8,8,0
+ 756  C940 FC 08 08 00
+ 757  C944 FE 80 80 7C    defb 254,128,128,124,2,130,124,0
+ 757  C948 02 82 7C 00
+ 758  C94C 7A 84 80 BC    defb 122,132,128,188,194,130,124,0
+ 758  C950 C2 82 7C 00
+ 759  C954 FE 84 08 10    defb 254,132,8,16,56,16,16,0
+ 759  C958 38 10 10 00
+ 760  C95C 7C 82 7C 82    defb 124,130,124,130,130,130,124,0
+ 760  C960 82 82 7C 00
+ 761  C964 7C 82 86 7A    defb 124,130,134,122,2,130,124,0
+ 761  C968 02 82 7C 00
+ 762  C96C 00 30 00 00    defb 0,48,0,0,0,48,0,0
+ 762  C970 00 30 00 00
+ 763  C974 00 30 00 00    defb 0,48,0,0,0,48,32,0
+ 763  C978 00 30 20 00
+ 764  C97C 08 10 20 40    defb 8,16,32,64,32,16,8,0
+ 764  C980 20 10 08 00
+ 765  C984 00 00 7E 00    defb 0,0,126,0,126,0,0,0
+ 765  C988 7E 00 00 00
+ 766  C98C 20 10 08 04    defb 32,16,8,4,8,16,32,0
+ 766  C990 08 10 20 00
+ 767  C994 7C 82 04 08    defb 124,130,4,8,16,0,16,0
+ 767  C998 10 00 10 00
+ 768  C99C 7C 82 9A AA    defb 124,130,154,170,170,158,124,0
+ 768  C9A0 AA 9E 7C 00
+ 769  C9A4 F8 44 42 FE    defb 248,68,66,254,66,66,198,0
+ 769  C9A8 42 42 C6 00
+ 770  C9AC FC 42 42 FC    defb 252,66,66,252,66,66,252,0
+ 770  C9B0 42 42 FC 00
+ 771  C9B4 7A 84 80 80    defb 122,132,128,128,128,130,124,0
+ 771  C9B8 80 82 7C 00
+ 772  C9BC FC 42 42 42    defb 252,66,66,66,66,66,252,0
+ 772  C9C0 42 42 FC 00
+ 773  C9C4 FE 42 40 70    defb 254,66,64,112,192,66,254,0
+ 773  C9C8 C0 42 FE 00
+ 774  C9CC FE 42 40 70    defb 254,66,64,112,192,64,224,0
+ 774  C9D0 C0 40 E0 00
+ 775  C9D4 7A 84 80 80    defb 122,132,128,128,156,130,126,2
+ 775  C9D8 9C 82 7E 02
+ 776  C9DC 82 44 44 5E    defb 130,68,68,94,244,68,130,0
+ 776  C9E0 F4 44 82 00
+ 777  C9E4 10 08 08 08    defb 16,8,8,8,8,8,4,0
+ 777  C9E8 08 08 04 00
+ 778  C9EC 7E 08 04 04    defb 126,8,4,4,4,132,120,0
+ 778  C9F0 04 84 78 00
+ 779  C9F4 CC 44 48 F0    defb 204,68,72,240,72,68,198,0
+ 779  C9F8 48 44 C6 00
+ 780  C9FC C0 40 40 40    defb 192,64,64,64,64,66,254,0
+ 780  CA00 40 42 FE 00
+ 781  CA04 C6 6A 5A 4A    defb 198,106,90,74,74,66,198,0
+ 781  CA08 4A 42 C6 00
+ 782  CA0C CC 64 54 54    defb 204,100,84,84,84,84,204,0
+ 782  CA10 54 54 CC 00
+ 783  CA14 78 84 84 84    defb 120,132,132,132,132,132,120,0
+ 783  CA18 84 84 78 00
+ 784  CA1C F8 44 44 F8    defb 248,68,68,248,64,64,224,0
+ 784  CA20 40 40 E0 00
+ 785  CA24 78 84 84 84    defb 120,132,132,132,132,140,125,2
+ 785  CA28 84 8C 7D 02
+ 786  CA2C FC 42 42 FC    defb 252,66,66,252,66,66,198,0
+ 786  CA30 42 42 C6 00
+ 787  CA34 74 88 80 78    defb 116,136,128,120,4,132,120,0
+ 787  CA38 04 84 78 00
+ 788  CA3C 7C 54 10 10    defb 124,84,16,16,16,16,48,0
+ 788  CA40 10 10 30 00
+ 789  CA44 C6 44 44 82    defb 198,68,68,130,130,130,124,0
+ 789  CA48 82 82 7C 00
+ 790  CA4C CC 44 44 44    defb 204,68,68,68,68,40,16,0
+ 790  CA50 44 28 10 00
+ 791  CA54 C6 42 42 4A    defb 198,66,66,74,90,106,204,0
+ 791  CA58 5A 6A CC 00
+ 792  CA5C 82 44 28 10    defb 130,68,40,16,40,68,130,0
+ 792  CA60 28 44 82 00
+ 793  CA64 CC 44 44 38    defb 204,68,68,56,16,16,48,0
+ 793  CA68 10 10 30 00
+ 794  CA6C FE 84 08 10    defb 254,132,8,16,32,66,254,0
+ 794  CA70 20 42 FE 00
+ 795  CA74 1C 10 10 10    defb 28,16,16,16,16,16,28,0
+ 795  CA78 10 10 1C 00
+ 796  CA7C 80 40 20 10    defb 128,64,32,16,8,4,2,1
+ 796  CA80 08 04 02 01
+ 797  CA84 38 08 08 08    defb 56,8,8,8,8,8,56,0
+ 797  CA88 08 08 38 00
+ 798  CA8C 00 00 10 38    defb 0,0,16,56,108,198,0,0
+ 798  CA90 6C C6 00 00
+ 799  CA94 00 00 00 00    defb 0,0,0,0,0,0,0,255
+ 799  CA98 00 00 00 FF
+ 800  CA9C 30 30 18 00    defb 48,48,24,0,0,0,0,0
+ 800  CAA0 00 00 00 00
+ 801  CAA4 00 00 7A 04    defb 0,0,122,4,124,132,122,0
+ 801  CAA8 7C 84 7A 00
+ 802  CAAC 80 40 40 5C    defb 128,64,64,92,98,66,188,0
+ 802  CAB0 62 42 BC 00
+ 803  CAB4 00 00 7A 84    defb 0,0,122,132,128,130,124,0
+ 803  CAB8 80 82 7C 00
+ 804  CABC 02 04 74 8C    defb 2,4,116,140,132,132,122,0
+ 804  CAC0 84 84 7A 00
+ 805  CAC4 00 00 BC 42    defb 0,0,188,66,124,64,62,0
+ 805  CAC8 7C 40 3E 00
+ 806  CACC 34 48 40 E0    defb 52,72,64,224,64,64,128,0
+ 806  CAD0 40 40 80 00
+ 807  CAD4 00 00 7A 84    defb 0,0,122,132,140,116,4,120
+ 807  CAD8 8C 74 04 78
+ 808  CADC 80 40 78 44    defb 128,64,120,68,68,68,136,0
+ 808  CAE0 44 44 88 00
+ 809  CAE4 10 00 10 08    defb 16,0,16,8,8,8,4,0
+ 809  CAE8 08 08 04 00
+ 810  CAEC 00 10 00 10    defb 0,16,0,16,8,8,136,112
+ 810  CAF0 08 08 88 70
+ 811  CAF4 C0 40 48 50    defb 192,64,72,80,224,80,200,0
+ 811  CAF8 E0 50 C8 00
+ 812  CAFC 30 10 10 10    defb 48,16,16,16,16,16,56,0
+ 812  CB00 10 10 38 00
+ 813  CB04 00 00 AC 54    defb 0,0,172,84,84,68,204,0
+ 813  CB08 54 44 CC 00
+ 814  CB0C 00 00 B8 44    defb 0,0,184,68,68,68,204,0
+ 814  CB10 44 44 CC 00
+ 815  CB14 00 00 78 84    defb 0,0,120,132,132,132,120,0
+ 815  CB18 84 84 78 00
+ 816  CB1C 00 00 B8 44    defb 0,0,184,68,68,120,64,128
+ 816  CB20 44 78 40 80
+ 817  CB24 00 00 74 88    defb 0,0,116,136,136,120,4,2
+ 817  CB28 88 78 04 02
+ 818  CB2C 00 00 B0 48    defb 0,0,176,72,64,64,64,0
+ 818  CB30 40 40 40 00
+ 819  CB34 00 00 78 80    defb 0,0,120,128,112,8,240,0
+ 819  CB38 70 08 F0 00
+ 820  CB3C 00 20 10 7C    defb 0,32,16,124,16,16,8,0
+ 820  CB40 10 10 08 00
+ 821  CB44 00 00 90 48    defb 0,0,144,72,132,132,120,0
+ 821  CB48 84 84 78 00
+ 822  CB4C 00 00 82 44    defb 0,0,130,68,68,40,16,0
+ 822  CB50 44 28 10 00
+ 823  CB54 00 00 84 42    defb 0,0,132,66,82,106,70,0
+ 823  CB58 52 6A 46 00
+ 824  CB5C 00 00 88 50    defb 0,0,136,80,32,80,136,0
+ 824  CB60 20 50 88 00
+ 825  CB64 00 00 82 44    defb 0,0,130,68,68,60,4,120
+ 825  CB68 44 3C 04 78
+ 826  CB6C 00 00 7C 88    defb 0,0,124,136,48,68,248,0
+ 826  CB70 30 44 F8 00
+ 827  CB74 0E 10 10 60    defb 14,16,16,96,16,16,14,0
+ 827  CB78 10 10 0E 00
+ 828  CB7C 18 18 18 00    defb 24,24,24,0,24,24,24,0
+ 828  CB80 18 18 18 00
+ 829  CB84 E0 10 10 0C    defb 224,16,16,12,16,16,224,0
+ 829  CB88 10 10 E0 00
+ 830  CB8C 00 00 70 9A    defb 0,0,112,154,12,0,0,0
+ 830  CB90 0C 00 00 00
+ 831  CB94 00 00 18 3C    defb 0,0,24,60,102,255,0,0
+ 831  CB98 66 FF 00 00
+ 832  CB9C
+ 833  CB9C
+ 834  CB9C
+ 835  CB9C                ;  include 7-rd3dmazeV6.asm    ;the maze itself and other routines
  836  CB9C
- 837  CB9C
- 838  CB9C
- 839  CB9C                ;  include 7-rd3dmazeV6.asm    ;the maze itself and other routines
- 840  CB9C
+ 837  CB9C              ;##############################################
+ 838  CB9C              ;misc data
+ 839  CB9C              ;various variables
+ 840  CB9C              ;udg charachter set
  841  CB9C              ;##############################################
- 842  CB9C              ;misc data
- 843  CB9C              ;various variables
- 844  CB9C              ;udg charachter set
- 845  CB9C              ;##############################################
- 846  CB9C
- 847  CB9C                      org 64000       ;fa00
- 848  FA00
- 849  FA00              ;variables
- 850  FA00              ;-----------------------------------------------
- 851  FA00
- 852  FA00 00 00        player_pos: dw $0             ; only when in the main game loop
- 853  FA02                                            ; holds the low byte of the current insertion location when inserting a passageway into the maze.
- 854  FA02
- 855  FA02              ;l4083:  db 134               ; high byte of the maze location data
- 856  FA02              ;l4084:  db 08                ; holds the desired length of the passageway beign inserted when constructing the maze.
- 857  FA02 06           maxview: db 6                   ;holds how far we can see before
- 858  FA03                                              ;hitting a wall
- 859  FA03              ;l4085:  db $01               ; holds the passageway direction when inserting a passageway into the maze ($00=north, $01=west, $02=south, $03=east).
- 860  FA03
- 861  FA03 00           flags:  db 0                 ; flags:
- 862  FA04                                           ;na   bit 7: 1=the player has been caught.
- 863  FA04                                           ;na   bit 6: 1=the player has moved forwards.408a
- 864  FA04                                           ;na   bit 5: 1=the player has not moved and so there is no need to redraw the view of the maze.
- 865  FA04                                           ;na   bit 4: 1=the exit is visible.
- 866  FA04                                           ;na   bit 3: 1=rex has moved.
- 867  FA04                                           ;na   bit 2: 1=rex has moved into a new location.
- 868  FA04                                           ;na   bit 1: 1=rex has his left foot forward, 0=rex has his right foot forward.
- 869  FA04                                           ; bit 0: maxview used bit
- 870  FA04
- 871  FA04 00           var1:   db 0  ; used for printing
- 872  FA05
- 873  FA05 00           var2:   db 0  ; used for printing
- 874  FA06
- 875  FA06 00           depth:  db 0  ; stores our depth of field when we are looking
- 876  FA07 00           l4086:  db 0
- 877  FA08
- 878  FA08              player_dir:
- 879  FA08 00                   db 0  ;; only when in the main game loop
- 880  FA09              de_count:
- 881  FA09 00 00                dw 0  ;used to hold 2 bytes of reg de for maze locating info
- 882  FA0B
- 883  FA0B 00 00        left     dw 0000
- 884  FA0D 00 00        right    dw 0000
- 885  FA0F 00 00        var3     dw 0000     ;misc. used in drawing walls
- 886  FA11 00 00        var4     dw 0000     ;misc. used in drawing walls
- 887  FA13 00 00        var5     dw 0000     ;misc - used in drawing walls
- 888  FA15 00 00        var6     dw 0000     ;stores current maze block check position
- 889  FA17
- 890  FA17 00           end_wall db 0        ;stores whether current wall being draw is
- 891  FA18                                   ;an outside maze wall or not (as we want to treat
- 892  FA18                                   ;this differnetly when drawn in future
- 893  FA18 00 00        var7     dw 0        ;misc loop counter in walls
- 894  FA1A 00 00        var8     dw 0        ;not used
- 895  FA1C 00 00        var9     dw 0        ;not used
- 896  FA1E 00           var10    db 0        ;used for maze wall drawing at depth 5
- 897  FA1F 00           lr_wall  db 0        ;used for left and right wall drawing in draw_side_walls routine
- 898  FA20 00 00        w5_start dw 0        ;not used
- 899  FA22 00           cur_map  db 0        ;stores current map to draw or show
- 900  FA23 00 00        map_start dw 0       ;tores the map start address
- 901  FA25
- 902  FA25 00 00        furthest_point dw 0   ;store the address of the furthest point
- 903  FA27                                    ;we can see in the maze from our position.
- 904  FA27 00           blockid  db 0         ;stores  block position of layer 5 for wall drawing
- 905  FA28 71           maze_highbyte db $71  ;holds high byte of current maze in use
- 906  FA29 00           map_show    db  0     ;tells is if we are already showing the map
- 907  FA2A 00           show_exit       db 0  ;used to say whether to draw the full size exit door or not
- 908  FA2B                                    ;0 = draw a closed exit door
- 909  FA2B                                    ;1 = draw an open exit door
- 910  FA2B 00           switch_pulled   db  0 ; 0 and 1 for off and o - default off
- 911  FA2C 00 00        sp_store        dw  0   ;save and restore the SP
- 912  FA2E 00 00        switch_sound    dw 0    ;shows if switch sound already sounded = 0=no, 1=yes
- 913  FA30 00           game_exit       db  0   ;set to 255 if we need to exit the game as we got passed level 0
- 914  FA31
- 915  FA31              ;#############################################################
- 916  FA31              ;reserve 200 bytes for the stack - points here from BASIC
- 917  FA31              ;stack pointer lives here
- 918  FA31 00 00 00...  stack_p        block 200
- 919  FAF9
- 920  FAF9              ;stack pointer is at 64511
+ 842  CB9C
+ 843  CB9C                      org 64000       ;fa00
+ 844  FA00
+ 845  FA00              ;variables
+ 846  FA00              ;-----------------------------------------------
+ 847  FA00
+ 848  FA00 00 00        player_pos: dw $0             ; only when in the main game loop
+ 849  FA02                                            ; holds the low byte of the current insertion location when inserting a passageway into the maze.
+ 850  FA02
+ 851  FA02              ;l4083:  db 134               ; high byte of the maze location data
+ 852  FA02              ;l4084:  db 08                ; holds the desired length of the passageway beign inserted when constructing the maze.
+ 853  FA02 06           maxview: db 6                   ;holds how far we can see before
+ 854  FA03                                              ;hitting a wall
+ 855  FA03              ;l4085:  db $01               ; holds the passageway direction when inserting a passageway into the maze ($00=north, $01=west, $02=south, $03=east).
+ 856  FA03
+ 857  FA03 00           flags:  db 0                 ; flags:
+ 858  FA04                                           ;na   bit 7: 1=the player has been caught.
+ 859  FA04                                           ;na   bit 6: 1=the player has moved forwards.408a
+ 860  FA04                                           ;na   bit 5: 1=the player has not moved and so there is no need to redraw the view of the maze.
+ 861  FA04                                           ;na   bit 4: 1=the exit is visible.
+ 862  FA04                                           ;na   bit 3: 1=rex has moved.
+ 863  FA04                                           ;na   bit 2: 1=rex has moved into a new location.
+ 864  FA04                                           ;na   bit 1: 1=rex has his left foot forward, 0=rex has his right foot forward.
+ 865  FA04                                           ; bit 0: maxview used bit
+ 866  FA04
+ 867  FA04 00           var1:   db 0  ; used for printing
+ 868  FA05
+ 869  FA05 00           var2:   db 0  ; used for printing
+ 870  FA06
+ 871  FA06 00           depth:  db 0  ; stores our depth of field when we are looking
+ 872  FA07 00           l4086:  db 0
+ 873  FA08
+ 874  FA08              player_dir:
+ 875  FA08 00                   db 0  ;; only when in the main game loop
+ 876  FA09              de_count:
+ 877  FA09 00 00                dw 0  ;used to hold 2 bytes of reg de for maze locating info
+ 878  FA0B
+ 879  FA0B 00 00        left     dw 0000
+ 880  FA0D 00 00        right    dw 0000
+ 881  FA0F 00 00        var3     dw 0000     ;misc. used in drawing walls
+ 882  FA11 00 00        var4     dw 0000     ;misc. used in drawing walls
+ 883  FA13 00 00        var5     dw 0000     ;misc - used in drawing walls
+ 884  FA15 00 00        var6     dw 0000     ;stores current maze block check position
+ 885  FA17
+ 886  FA17 00           end_wall db 0        ;stores whether current wall being draw is
+ 887  FA18                                   ;an outside maze wall or not (as we want to treat
+ 888  FA18                                   ;this differnetly when drawn in future
+ 889  FA18 00 00        var7     dw 0        ;misc loop counter in walls
+ 890  FA1A 00 00        var8     dw 0        ;not used
+ 891  FA1C 00 00        var9     dw 0        ;not used
+ 892  FA1E 00           var10    db 0        ;used for maze wall drawing at depth 5
+ 893  FA1F 00           lr_wall  db 0        ;used for left and right wall drawing in draw_side_walls routine
+ 894  FA20 00 00        w5_start dw 0        ;not used
+ 895  FA22 00           cur_map  db 0        ;stores current map to draw or show
+ 896  FA23 00 00        map_start dw 0       ;tores the map start address
+ 897  FA25
+ 898  FA25 00 00        furthest_point dw 0   ;store the address of the furthest point
+ 899  FA27                                    ;we can see in the maze from our position.
+ 900  FA27 00           blockid  db 0         ;stores  block position of layer 5 for wall drawing
+ 901  FA28 71           maze_highbyte db $71  ;holds high byte of current maze in use
+ 902  FA29 00           map_show    db  0     ;tells is if we are already showing the map
+ 903  FA2A 00           show_exit       db 0  ;used to say whether to draw the full size exit door or not
+ 904  FA2B                                    ;0 = draw a closed exit door
+ 905  FA2B                                    ;1 = draw an open exit door
+ 906  FA2B 00           switch_pulled   db  0 ; 0 and 1 for off and o - default off
+ 907  FA2C 00 00        sp_store        dw  0   ;save and restore the SP
+ 908  FA2E 00 00        switch_sound    dw 0    ;shows if switch sound already sounded = 0=no, 1=yes
+ 909  FA30 00           game_exit       db  0   ;set to 255 if we need to exit the game as we got passed level 0
+ 910  FA31
+ 911  FA31              ;#############################################################
+ 912  FA31              ;reserve 200 bytes for the stack - points here from BASIC
+ 913  FA31              ;stack pointer lives here
+ 914  FA31 00 00 00...  stack_p        block 200
+ 915  FAF9
+ 916  FAF9              ;stack pointer is at 64511
+ 917  FAF9
+ 918  FAF9              ;##############################################
+ 919  FAF9              ;udg charachter set starts at 64512
+ 920  FAF9              ;##############################################
  921  FAF9
- 922  FAF9              ;##############################################
- 923  FAF9              ;udg charachter set starts at 64512
- 924  FAF9              ;##############################################
- 925  FAF9
- 926  FAF9                      org 64512
- 927  FC00
- 928  FC00              ;##############################################
- 929  FC00                    ;UDG Charachter Defs
- 930  FC00              ;##############################################
- 931  FC00              _chars:
- 932  FC00 48 4B 97 93   db	72,75,151,147,137,68,36,18      ;80	65080	;door wood effect 1
- 932  FC04 89 44 24 12
- 933  FC08 A8 44 A2 A9   db	168,68,162,169,41,66,148,164	;81	65088   ;door wood effect 2
- 933  FC0C 29 42 94 A4
- 934  FC10 11 2A 52 54   db	17,42,82,84,78,78,37,18  	    ;82	65096   ;door wood effect 3
- 934  FC14 4E 4E 25 12
- 935  FC18 28 48 A4 94   db	40,72,164,148,74,146,36,72  	;83	65104   ;door wood effect 4
- 935  FC1C 4A 92 24 48
- 936  FC20 34 34 34 F7   db	52,52,52,247,247,52,52,52     	;84	65112	;Door Barsvertical
- 936  FC24 F7 34 34 34
- 937  FC28 00 00 00 FF   db	0,0,0,255,255,0,0,0   	        ;85	65120   ;Door Bars Crossbars
- 937  FC2C FF 00 00 00
- 938  FC30 AC EC 6C 2C   db	172,236,108,44,44,46,47,45	    ;86	65128	;door bars left side
- 938  FC34 2C 2E 2F 2D
- 939  FC38 35 37 36 34   db	53,55,54,52,52,116,244,180	    ;87	65136	;door bars right side
- 939  FC3C 34 74 F4 B4
- 940  FC40              ;rest of door graphic chars are at $b9 onwards below
- 941  FC40
- 942  FC40 C0 F0 FC FF   db	192,240,252,255,255,252,240,192 ;88	65144   left hand triangle pointed
- 942  FC44 FF FC F0 C0
- 943  FC48 03 0F 3F FF   db	3,15,63,255,255,63,15,3         ;89	65152	right hand triangle pointed
- 943  FC4C FF 3F 0F 03
- 944  FC50 00 00 00 00   db	0,0,0,0,0,0,0,0	                ;8a	65160
- 944  FC54 00 00 00 00
- 945  FC58 FF 55 FF AF   db	255,85,255,175,255,95,255,255   ;8b	65168	upper wall 5 right bottom
- 945  FC5C FF 5F FF FF
- 946  FC60 FF D5 FF FA   db	255,213,255,250,255,253,255,255	;8c	upper wall 5 left bottom
- 946  FC64 FF FD FF FF
- 947  FC68
- 948  FC68              ;extra layer 5 chars
- 949  FC68 FF 3F F3 9F   db	255,63,243,159,244,47,249,143 	 ;8d	small wall stretched (layer 3)
- 949  FC6C F4 2F F9 8F
- 950  FC70 FF 8C FF 26   db	255,140,255,38,255,140,255,38 	 ;8e	small wall stretched (layer 3)
- 950  FC74 FF 8C FF 26
- 951  FC78
- 952  FC78               ;Section 2 left and right UDG
- 953  FC78 00 00 00 00   DB 0,0,0,0,0,3,31,255              ;8f 65200  top right Section 2 (1)
- 953  FC7C 00 03 1F FF
- 954  FC80 00 00 01 0F   DB 0,0,1,15,127,255,255,255        ;90 65208  top right Section 2 (2)
- 954  FC84 7F FF FF FF
- 955  FC88 07 3F FF FF   DB 7,63,255,255,255,255,255,255    ;91 65216  top right Section 2 (3)
- 955  FC8C FF FF FF FF
- 956  FC90
- 957  FC90 FF 1F 03 00   DB 255,31,3,0,0,0,0,0              ;92 65224   bottom right Section 2 (1)
- 957  FC94 00 00 00 00
- 958  FC98 FF FF FF 7F   DB 255,255,255,127,15,1,0,0        ;93 65232   bottom right Section 2 (2)
- 958  FC9C 0F 01 00 00
- 959  FCA0 FF FF FF FF   DB 255,255,255,255,255,255,63,7    ;94 65240   bottom right Section 2 (3)
- 959  FCA4 FF FF 3F 07
- 960  FCA8
- 961  FCA8 E0 FC FF FF   DB 224,252,255,255,255,255,255,255 ;95 65248   top left Section 2 (1)
- 961  FCAC FF FF FF FF
- 962  FCB0 00 00 80 F0   DB 0,0,128,240,254,255,255,255     ;96 65256   top left Section 2 (2)
- 962  FCB4 FE FF FF FF
- 963  FCB8 00 00 00 00   DB 0,0,0,0,0,192,248,255           ;97 65264   top left Section 2 (3)
- 963  FCBC 00 C0 F8 FF
- 964  FCC0
- 965  FCC0 FF FF FF FF   DB 255,255,255,255,255,255,252,224 ;98 65272   bottom left Section 2 (1)
- 965  FCC4 FF FF FC E0
- 966  FCC8 FF FF FF FE   DB 255,255,255,254,240,128,0,0     ;99 65280   bottom left Section 2 (2)
- 966  FCCC F0 80 00 00
- 967  FCD0 FF F8 C0 00   DB 255,248,192,0,0,0,0,0           ;9a 65288   bottom left Section 2 (3)
- 967  FCD4 00 00 00 00
- 968  FCD8
- 969  FCD8 80 C0 E0 F0   DB	128,192,224,240,245,250,245,250	;9b	65296	layer 5 left top
- 969  FCDC F5 FA F5 FA
- 970  FCE0 F5 FA F5 FA   DB	245,250,245,250,240,224,192,128	;9c	65304	layer 5 left bottom
- 970  FCE4 F0 E0 C0 80
- 971  FCE8 01 03 07 0F   DB	1,3,7,15,95,175,95,175         	;9d	65312   layer 5 right top
- 971  FCEC 5F AF 5F AF
- 972  FCF0 5F AF 5F AF   DB	95,175,95,175,15,7,3,1         	;9e	65320	layer 5 right bottom
- 972  FCF4 0F 07 03 01
- 973  FCF8 55 AA 55 AA   DB	85,170,85,170,85,170,85,170    	;9f	65328	chequer
- 973  FCFC 55 AA 55 AA
- 974  FD00 55 AA 55 AA   DB	85,170,85,170,0,0,0,0          	;a0	65336	top chequer
- 974  FD04 00 00 00 00
- 975  FD08 00 00 00 00   DB	0,0,0,0,85,170,85,170          	;a1	65344	bottom chequer
- 975  FD0C 55 AA 55 AA
- 976  FD10 00 00 00 00   DB	0,0,0,0,255,255,255,255        	;a2	65352		bottom black
- 976  FD14 FF FF FF FF
- 977  FD18 FF FF FF FF   DB	255,255,255,255,0,0,0,0        	;a3	65360		top black
- 977  FD1C 00 00 00 00
- 978  FD20 FF 08 08 08   DB	255,8,8,8,255,128,128,255      	;a4	65368		brick pattern
- 978  FD24 FF 80 80 FF
- 979  FD28 99 C8 64 32   DB	153,200,100,50,25,140,206,171  	;a5	65376		top left brick diag
- 979  FD2C 19 8C CE AB
- 980  FD30 10 28 10 7C   DB	16,40,16,124,16,40,40,68       	;a6	65384		man
- 980  FD34 10 28 28 44
- 981  FD38 00 78 6B 7E   DB	0,120,107,126,124,104,120,0    	;a7	65392		switch
- 981  FD3C 7C 68 78 00
- 982  FD40 99 66 5A 5A   db 153,102,90,90,90,90,102,153     ;a8	65400       exit door
- 982  FD44 5A 5A 66 99
- 983  FD48 80 C0 E0 F0   DB	128,192,224,240,255,255,255,255	;a9	65408		top left 5
- 983  FD4C FF FF FF FF
- 984  FD50 01 03 07 0F   DB	1,3,7,15,255,255,255,255       	;aa	65416		top right 5
- 984  FD54 FF FF FF FF
- 985  FD58 FF FF FF FF   DB	255,255,255,255,240,224,192,128	;ab	65424		bot left  5
- 985  FD5C F0 E0 C0 80
- 986  FD60 FF FF FF FF   DB	255,255,255,255,15,7,3,1       	;ac	65432		bot right 5
- 986  FD64 0F 07 03 01
- 987  FD68 FF E5 FF FD   DB	255,229,255,253,253,255,255,255	;ad	65440		top right fancy
- 987  FD6C FD FF FF FF
- 988  FD70 FF A7 FF BF   DB	255,167,255,191,191,255,255,255	;ae	65448		top left fancy
- 988  FD74 BF FF FF FF
- 989  FD78 FF FF FF FF   DB	255,255,255,255,255,255,255,255	;af	65456		all black
- 989  FD7C FF FF FF FF
- 990  FD80 FF FE FC F8   DB	255,254,252,248,240,224,192,128	;b0	65464		top left triangle
- 990  FD84 F0 E0 C0 80
- 991  FD88 FF 7F 3F 1F   DB	255,127,63,31,15,7,3,1         	;b1	65472		top right triangle
- 991  FD8C 0F 07 03 01
- 992  FD90 01 03 07 0F   DB	1,3,7,15,31,63,127,255         	;b2	65480		bot right triangle
- 992  FD94 1F 3F 7F FF
- 993  FD98 80 C0 E0 F0   DB	128,192,224,240,248,252,254,255	;b3	65488		bot right triangle
- 993  FD9C F8 FC FE FF
- 994  FDA0
- 995  FDA0 FF 55 FF AA   DB	255,85,255,170,255,85,255,170	;b4	65496		small wall  (5)
- 995  FDA4 FF 55 FF AA
- 996  FDA8 FF 88 88 FF   DB	255,136,136,255,162,162,255,128	;b5	65504		mediumwall  (2)
- 996  FDAC A2 A2 FF 80
- 997  FDB0 FF 88 88 88   DB	255,136,136,136,255,224,192,128	;b6	65512		largewall   (4)
- 997  FDB4 FF E0 C0 80
- 998  FDB8 FF AA FF AA   DB	255,170,255,170,255,170,255,170 ;b7	65520		mediumwall_1(3)
- 998  FDBC FF AA FF AA
- 999  FDC0 FF 88 88 88   DB	255,136,136,136,255,128,128,128 ;b8	65528		hugewall
- 999  FDC4 FF 80 80 80
-1000  FDC8
-1001  FDC8              ;layer 5 section 3 right TOP
-1002  FDC8
-1003  FDC8 00 00 00 FF   DB 0,0,0,255,255,255,255,255       ;b9 top right section 3 (4)
-1003  FDCC FF FF FF FF
-1004  FDD0 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;ba top right section 3 (3)
-1004  FDD4 FF FF FF FF
-1005  FDD8 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;bb top right section 3 (2)
-1005  FDDC FF FF FF FF
-1006  FDE0 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;bc top right section 3 (1)
-1006  FDE4 FF FF FF FF
-1007  FDE8
-1008  FDE8              ;layer 5 section 3 right BOTTOM
-1009  FDE8
-1010  FDE8 FF FF FF FF   DB 255,255,255,255,255,0,0,0       ;bd top right section 3 (6)
-1010  FDEC FF 00 00 00
-1011  FDF0 FF FF FF FF   DB 255,255,255,255,255,255,0,0     ;be top right section 3 (6)
-1011  FDF4 FF FF 00 00
-1012  FDF8 FF FF FF FF   DB 255,255,255,255,255,255,255,0   ;bf top right section 3 (6)
-1012  FDFC FF FF FF 00
-1013  FE00 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c0 top right section 3 (6)
-1013  FE04 FF FF FF FF
-1014  FE08
-1015  FE08              ;layer 5 section 3 left TOP TBD
-1016  FE08
-1017  FE08 FF FF FF FF   DB 255,255,255,255,255,0,0,0       ;c1 bottom right section 3 (5)
-1017  FE0C FF 00 00 00
-1018  FE10 FF FF FF FF   DB 255,255,255,255,255,255,0,0     ;c2 bottom right section 3 (6)
-1018  FE14 FF FF 00 00
-1019  FE18 FF FF FF FF   DB 255,255,255,255,255,255,255,0   ;c3 bottom right section 3 (6)
-1019  FE1C FF FF FF 00
-1020  FE20 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c4 bottom right section 3 (6)
-1020  FE24 FF FF FF FF
-1021  FE28
-1022  FE28              ;layer 5 section 3 left BOTTOM TBD
-1023  FE28
-1024  FE28 00 00 00 FF   DB 0,0,0,255,255,255,255,255       ;c5 bottom right section 3 (5)
-1024  FE2C FF FF FF FF
-1025  FE30 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;c6 bottom right section 3 (6)
-1025  FE34 FF FF FF FF
-1026  FE38 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;c7 bottom right section 3 (6)
-1026  FE3C FF FF FF FF
-1027  FE40 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c8 bottom right section 3 (6)
-1027  FE44 FF FF FF FF
-1028  FE48
-1029  FE48
-1030  FE48              ;layer 5 section 4 right TOP
-1031  FE48
-1032  FE48 00 00 00 00   DB 0,0,0,0,0,0,0,255               ;c9 top right section 3 (4)
-1032  FE4C 00 00 00 FF
-1033  FE50 00 00 00 00   DB 0,0,0,0,0,0,255,255             ;ca top right section 3 (4)
-1033  FE54 00 00 FF FF
-1034  FE58 00 00 00 00   DB 0,0,0,0,255,255,255,255         ;cb top right section 3 (3)
-1034  FE5C FF FF FF FF
-1035  FE60 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;cc top right section 3 (2)
-1035  FE64 FF FF FF FF
-1036  FE68 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;cd top right section 3 (1)
-1036  FE6C FF FF FF FF
-1037  FE70
-1038  FE70              ;layer 5 section 4 right BOTTOM
-1039  FE70
-1040  FE70 FF 00 00 00   db 255,0,0,0,0,0,0,0               ;ce top right section 3 (6)
-1040  FE74 00 00 00 00
-1041  FE78 FF FF 00 00   db 255,255,0,0,0,0,0,0             ;cf top right section 3 (6)
-1041  FE7C 00 00 00 00
-1042  FE80 FF FF FF FF   db 255,255,255,255,0,0,0,0         ;d0 top right section 3 (6)
-1042  FE84 00 00 00 00
-1043  FE88 FF FF FF FF   db 255,255,255,255,255,255,0,0     ;d1 top right section 3 (6)
-1043  FE8C FF FF 00 00
-1044  FE90 FF FF FF FF   db 255,255,255,255,255,255,255,0   ;d2 top right section 3 (6)
-1044  FE94 FF FF FF 00
-1045  FE98
-1046  FE98
-1047  FE98              ;Extra wall5
-1048  FE98              ; db	249,63,243,159,244,47,249,143 	;c9	small wall stretched more
-1049  FE98              ; db 255,15,255,31,255,15,255,15	   	;ca	small wall stretched
-1050  FE98              ; db 240,15,224,31,224,15,112,15	   	;cb	small wall stretched
-1051  FE98
-1052  FE98              ;triangular door wood parts
-1053  FE98 FF FF FE FB   db	255,255,254,251,249,228,228,146     ;d3	   ;door wood effect top corner 1 right side($80)
-1053  FE9C F9 E4 E4 92
-1054  FEA0 88 CB E7 F3   db	136,203,231,243,249,252,254,255	    ;d4	   ;door wood effect bottom corner 1 (80)
-1054  FEA4 F9 FC FE FF
-1055  FEA8 FF FE FE FC   db	255,254,254,252,254,238,229,146     ;d5	   ;door wood effect top corner 3 right side($82)
-1055  FEAC FE EE E5 92
-1056  FEB0 91 CA E2 F4   db	145,202,226,244,250,252,254,255    	;d6    ;door wood effect bottom corner 1 (82)
-1056  FEB4 FA FC FE FF
-1057  FEB8
-1058  FEB8              ;additional characters for level numbers printed on right of display
-1059  FEB8              ;single caracter 10,11,12,13,14,15
-1060  FEB8 00 4C 52 52    db  0,76,82,82,82,82,76,0             ;d7
-1060  FEBC 52 52 4C 00
-1061  FEC0 00 48 48 48    db  0,72,72,72,72,72,72,0             ;d8
-1061  FEC4 48 48 48 00
-1062  FEC8 00 4C 52 42    db  0,76,82,66,68,72,94,0             ;d9
-1062  FECC 44 48 5E 00
-1063  FED0 00 4C 52 46    db  0,76,82,70,66,82,76,0             ;da
-1063  FED4 42 52 4C 00
-1064  FED8 00 42 46 4A    db  0,66,70,74,94,66,66,0             ;db
-1064  FEDC 5E 42 42 00
-1065  FEE0 00 4E 50 4C    db  0,78,80,76,66,82,76,0             ;dc
-1065  FEE4 42 52 4C 00
-1066  FEE8
-1067  FEE8              ;characters to print around the switch
-1068  FEE8 FF 00 FF 00    db  255,0,255,0,255,0,255,0           ;dd  ;horizontal bars x 4
-1068  FEEC FF 00 FF 00
-1069  FEF0 FF 80 BF A0    db  255,128,191,160,175,168,171,170   ;de  ;top left corner
-1069  FEF4 AF A8 AB AA
-1070  FEF8 AA AB A8 AF    db  170,171,168,175,160,191,128,255   ;df  ;bot left corner
-1070  FEFC A0 BF 80 FF
-1071  FF00 AA AA AA AA    db  170,170,170,170,170,170,170,170   ;e0  ;vertical bars
-1071  FF04 AA AA AA AA
-1072  FF08 FF 01 FD 05    db  255,1,253,5,245,21,213,85         ;e1  ;top right corner
-1072  FF0C F5 15 D5 55
-1073  FF10 55 D5 15 F5    db  85,213,21,245,5,253,1,255         ;e2  ;bot right corner
-1073  FF14 05 FD 01 FF
-1074  FF18 00 FF 00 FF    db  0,255,0,255,0,255,0,255           ;e3  ;bot horizontal bars
-1074  FF1C 00 FF 00 FF
-1075  FF20 55 55 55 55    db  85,85,85,85,85,85,85,85           ;e4  ;right vertical bars
-1075  FF24 55 55 55 55
-1076  FF28
-1077  FF28              ;side view switch chars
-1078  FF28 FF FF FE FC    db  255,255,254,252,249,242,228,201   ;e5 ;top triangle bit
-1078  FF2C F9 F2 E4 C9
-1079  FF30 92 A4 A9 AA    db  146,164,169,170,170,170,170,170   ;e6 ; top left corner
-1079  FF34 AA AA AA AA
-1080  FF38 FF 01 7D 85    db  255,1,125,133,53,85,149,21        ;e7 ;top right corner
-1080  FF3C 35 55 95 15
-1081  FF40 55 D5 55 55    db  85,213,85,85,85,85,85,85          ;e8 ;2nd top line bottom right bit
-1081  FF44 55 55 55 55
-1082  FF48 40 80 00 00    db  64,128,0,0,0,0,0,0                ;e9 ;3rd top line bottom 2nd right bit
-1082  FF4C 00 00 00 00
-1083  FF50 92 24 49 92    db  146,36,73,146,36,72,144,32        ;ea ;top horizontal line
-1083  FF54 24 48 90 20
-1084  FF58
-1085  FF58 C9 E4 F2 F9    db  201,228,242,249,252,254,255,255  ;eb   ;bottom triangle bit
-1085  FF5C FC FE FF FF
-1086  FF60 15 95 55 35    db  21,149,85,53,133,125,1,255       ;ec ;bottom right corner
-1086  FF64 85 7D 01 FF
-1087  FF68 55 55 55 55    db  85,85,85,85,85,85,213,85         ;ed ;2nd bottom line bottom right bit
-1087  FF6C 55 55 D5 55
-1088  FF70 AA AA AA AA    db  170,170,170,170,170,169,164,146  ;ee   ;bottom left corner
-1088  FF74 AA A9 A4 92
-1089  FF78 00 00 00 00    db  0,0,0,0,0,0,128,64               ;ef ;3rd top line bottom 2nd right bit
-1089  FF7C 00 00 80 40
-1090  FF80 20 90 48 24    db  32,144,72,36,146,73,36,146       ;f0 ;bottom horizontal line
-1090  FF84 92 49 24 92
-1091  FF88
-1092  FF88 00 00 00 00    db   0,0,0,0,32,0,0,1                ;f1 ;stars for the inside of the closed door
-1092  FF8C 20 00 00 01
-1093  FF90 00 08 00 00    db   0,8,0,0,0,0,0,0                 ;f2 ;stars for the inside of the closed door
-1093  FF94 00 00 00 00
+ 922  FAF9                      org 64512
+ 923  FC00
+ 924  FC00              ;##############################################
+ 925  FC00                    ;UDG Charachter Defs
+ 926  FC00              ;##############################################
+ 927  FC00              _chars:
+ 928  FC00 48 4B 97 93   db	72,75,151,147,137,68,36,18      ;80	65080	;door wood effect 1
+ 928  FC04 89 44 24 12
+ 929  FC08 A8 44 A2 A9   db	168,68,162,169,41,66,148,164	;81	65088   ;door wood effect 2
+ 929  FC0C 29 42 94 A4
+ 930  FC10 11 2A 52 54   db	17,42,82,84,78,78,37,18  	    ;82	65096   ;door wood effect 3
+ 930  FC14 4E 4E 25 12
+ 931  FC18 28 48 A4 94   db	40,72,164,148,74,146,36,72  	;83	65104   ;door wood effect 4
+ 931  FC1C 4A 92 24 48
+ 932  FC20 34 34 34 F7   db	52,52,52,247,247,52,52,52     	;84	65112	;Door Barsvertical
+ 932  FC24 F7 34 34 34
+ 933  FC28 00 00 00 FF   db	0,0,0,255,255,0,0,0   	        ;85	65120   ;Door Bars Crossbars
+ 933  FC2C FF 00 00 00
+ 934  FC30 AC EC 6C 2C   db	172,236,108,44,44,46,47,45	    ;86	65128	;door bars left side
+ 934  FC34 2C 2E 2F 2D
+ 935  FC38 35 37 36 34   db	53,55,54,52,52,116,244,180	    ;87	65136	;door bars right side
+ 935  FC3C 34 74 F4 B4
+ 936  FC40              ;rest of door graphic chars are at $b9 onwards below
+ 937  FC40
+ 938  FC40 C0 F0 FC FF   db	192,240,252,255,255,252,240,192 ;88	65144   left hand triangle pointed
+ 938  FC44 FF FC F0 C0
+ 939  FC48 03 0F 3F FF   db	3,15,63,255,255,63,15,3         ;89	65152	right hand triangle pointed
+ 939  FC4C FF 3F 0F 03
+ 940  FC50 00 00 00 00   db	0,0,0,0,0,0,0,0	                ;8a	65160
+ 940  FC54 00 00 00 00
+ 941  FC58 FF 55 FF AF   db	255,85,255,175,255,95,255,255   ;8b	65168	upper wall 5 right bottom
+ 941  FC5C FF 5F FF FF
+ 942  FC60 FF D5 FF FA   db	255,213,255,250,255,253,255,255	;8c	upper wall 5 left bottom
+ 942  FC64 FF FD FF FF
+ 943  FC68
+ 944  FC68              ;extra layer 5 chars
+ 945  FC68 FF 3F F3 9F   db	255,63,243,159,244,47,249,143 	 ;8d	small wall stretched (layer 3)
+ 945  FC6C F4 2F F9 8F
+ 946  FC70 FF 8C FF 26   db	255,140,255,38,255,140,255,38 	 ;8e	small wall stretched (layer 3)
+ 946  FC74 FF 8C FF 26
+ 947  FC78
+ 948  FC78               ;Section 2 left and right UDG
+ 949  FC78 00 00 00 00   DB 0,0,0,0,0,3,31,255              ;8f 65200  top right Section 2 (1)
+ 949  FC7C 00 03 1F FF
+ 950  FC80 00 00 01 0F   DB 0,0,1,15,127,255,255,255        ;90 65208  top right Section 2 (2)
+ 950  FC84 7F FF FF FF
+ 951  FC88 07 3F FF FF   DB 7,63,255,255,255,255,255,255    ;91 65216  top right Section 2 (3)
+ 951  FC8C FF FF FF FF
+ 952  FC90
+ 953  FC90 FF 1F 03 00   DB 255,31,3,0,0,0,0,0              ;92 65224   bottom right Section 2 (1)
+ 953  FC94 00 00 00 00
+ 954  FC98 FF FF FF 7F   DB 255,255,255,127,15,1,0,0        ;93 65232   bottom right Section 2 (2)
+ 954  FC9C 0F 01 00 00
+ 955  FCA0 FF FF FF FF   DB 255,255,255,255,255,255,63,7    ;94 65240   bottom right Section 2 (3)
+ 955  FCA4 FF FF 3F 07
+ 956  FCA8
+ 957  FCA8 E0 FC FF FF   DB 224,252,255,255,255,255,255,255 ;95 65248   top left Section 2 (1)
+ 957  FCAC FF FF FF FF
+ 958  FCB0 00 00 80 F0   DB 0,0,128,240,254,255,255,255     ;96 65256   top left Section 2 (2)
+ 958  FCB4 FE FF FF FF
+ 959  FCB8 00 00 00 00   DB 0,0,0,0,0,192,248,255           ;97 65264   top left Section 2 (3)
+ 959  FCBC 00 C0 F8 FF
+ 960  FCC0
+ 961  FCC0 FF FF FF FF   DB 255,255,255,255,255,255,252,224 ;98 65272   bottom left Section 2 (1)
+ 961  FCC4 FF FF FC E0
+ 962  FCC8 FF FF FF FE   DB 255,255,255,254,240,128,0,0     ;99 65280   bottom left Section 2 (2)
+ 962  FCCC F0 80 00 00
+ 963  FCD0 FF F8 C0 00   DB 255,248,192,0,0,0,0,0           ;9a 65288   bottom left Section 2 (3)
+ 963  FCD4 00 00 00 00
+ 964  FCD8
+ 965  FCD8 80 C0 E0 F0   DB	128,192,224,240,245,250,245,250	;9b	65296	layer 5 left top
+ 965  FCDC F5 FA F5 FA
+ 966  FCE0 F5 FA F5 FA   DB	245,250,245,250,240,224,192,128	;9c	65304	layer 5 left bottom
+ 966  FCE4 F0 E0 C0 80
+ 967  FCE8 01 03 07 0F   DB	1,3,7,15,95,175,95,175         	;9d	65312   layer 5 right top
+ 967  FCEC 5F AF 5F AF
+ 968  FCF0 5F AF 5F AF   DB	95,175,95,175,15,7,3,1         	;9e	65320	layer 5 right bottom
+ 968  FCF4 0F 07 03 01
+ 969  FCF8 55 AA 55 AA   DB	85,170,85,170,85,170,85,170    	;9f	65328	chequer
+ 969  FCFC 55 AA 55 AA
+ 970  FD00 55 AA 55 AA   DB	85,170,85,170,0,0,0,0          	;a0	65336	top chequer
+ 970  FD04 00 00 00 00
+ 971  FD08 00 00 00 00   DB	0,0,0,0,85,170,85,170          	;a1	65344	bottom chequer
+ 971  FD0C 55 AA 55 AA
+ 972  FD10 00 00 00 00   DB	0,0,0,0,255,255,255,255        	;a2	65352		bottom black
+ 972  FD14 FF FF FF FF
+ 973  FD18 FF FF FF FF   DB	255,255,255,255,0,0,0,0        	;a3	65360		top black
+ 973  FD1C 00 00 00 00
+ 974  FD20 FF 08 08 08   DB	255,8,8,8,255,128,128,255      	;a4	65368		brick pattern
+ 974  FD24 FF 80 80 FF
+ 975  FD28 99 C8 64 32   DB	153,200,100,50,25,140,206,171  	;a5	65376		top left brick diag
+ 975  FD2C 19 8C CE AB
+ 976  FD30 10 28 10 7C   DB	16,40,16,124,16,40,40,68       	;a6	65384		man
+ 976  FD34 10 28 28 44
+ 977  FD38 00 78 6B 7E   DB	0,120,107,126,124,104,120,0    	;a7	65392		switch
+ 977  FD3C 7C 68 78 00
+ 978  FD40 99 66 5A 5A   db 153,102,90,90,90,90,102,153     ;a8	65400       exit door
+ 978  FD44 5A 5A 66 99
+ 979  FD48 80 C0 E0 F0   DB	128,192,224,240,255,255,255,255	;a9	65408		top left 5
+ 979  FD4C FF FF FF FF
+ 980  FD50 01 03 07 0F   DB	1,3,7,15,255,255,255,255       	;aa	65416		top right 5
+ 980  FD54 FF FF FF FF
+ 981  FD58 FF FF FF FF   DB	255,255,255,255,240,224,192,128	;ab	65424		bot left  5
+ 981  FD5C F0 E0 C0 80
+ 982  FD60 FF FF FF FF   DB	255,255,255,255,15,7,3,1       	;ac	65432		bot right 5
+ 982  FD64 0F 07 03 01
+ 983  FD68 FF E5 FF FD   DB	255,229,255,253,253,255,255,255	;ad	65440		top right fancy
+ 983  FD6C FD FF FF FF
+ 984  FD70 FF A7 FF BF   DB	255,167,255,191,191,255,255,255	;ae	65448		top left fancy
+ 984  FD74 BF FF FF FF
+ 985  FD78 FF FF FF FF   DB	255,255,255,255,255,255,255,255	;af	65456		all black
+ 985  FD7C FF FF FF FF
+ 986  FD80 FF FE FC F8   DB	255,254,252,248,240,224,192,128	;b0	65464		top left triangle
+ 986  FD84 F0 E0 C0 80
+ 987  FD88 FF 7F 3F 1F   DB	255,127,63,31,15,7,3,1         	;b1	65472		top right triangle
+ 987  FD8C 0F 07 03 01
+ 988  FD90 01 03 07 0F   DB	1,3,7,15,31,63,127,255         	;b2	65480		bot right triangle
+ 988  FD94 1F 3F 7F FF
+ 989  FD98 80 C0 E0 F0   DB	128,192,224,240,248,252,254,255	;b3	65488		bot right triangle
+ 989  FD9C F8 FC FE FF
+ 990  FDA0
+ 991  FDA0 FF 55 FF AA   DB	255,85,255,170,255,85,255,170	;b4	65496		small wall  (5)
+ 991  FDA4 FF 55 FF AA
+ 992  FDA8 FF 88 88 FF   DB	255,136,136,255,162,162,255,128	;b5	65504		mediumwall  (2)
+ 992  FDAC A2 A2 FF 80
+ 993  FDB0 FF 88 88 88   DB	255,136,136,136,255,224,192,128	;b6	65512		largewall   (4)
+ 993  FDB4 FF E0 C0 80
+ 994  FDB8 FF AA FF AA   DB	255,170,255,170,255,170,255,170 ;b7	65520		mediumwall_1(3)
+ 994  FDBC FF AA FF AA
+ 995  FDC0 FF 88 88 88   DB	255,136,136,136,255,128,128,128 ;b8	65528		hugewall
+ 995  FDC4 FF 80 80 80
+ 996  FDC8
+ 997  FDC8              ;layer 5 section 3 right TOP
+ 998  FDC8
+ 999  FDC8 00 00 00 FF   DB 0,0,0,255,255,255,255,255       ;b9 top right section 3 (4)
+ 999  FDCC FF FF FF FF
+1000  FDD0 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;ba top right section 3 (3)
+1000  FDD4 FF FF FF FF
+1001  FDD8 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;bb top right section 3 (2)
+1001  FDDC FF FF FF FF
+1002  FDE0 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;bc top right section 3 (1)
+1002  FDE4 FF FF FF FF
+1003  FDE8
+1004  FDE8              ;layer 5 section 3 right BOTTOM
+1005  FDE8
+1006  FDE8 FF FF FF FF   DB 255,255,255,255,255,0,0,0       ;bd top right section 3 (6)
+1006  FDEC FF 00 00 00
+1007  FDF0 FF FF FF FF   DB 255,255,255,255,255,255,0,0     ;be top right section 3 (6)
+1007  FDF4 FF FF 00 00
+1008  FDF8 FF FF FF FF   DB 255,255,255,255,255,255,255,0   ;bf top right section 3 (6)
+1008  FDFC FF FF FF 00
+1009  FE00 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c0 top right section 3 (6)
+1009  FE04 FF FF FF FF
+1010  FE08
+1011  FE08              ;layer 5 section 3 left TOP TBD
+1012  FE08
+1013  FE08 FF FF FF FF   DB 255,255,255,255,255,0,0,0       ;c1 bottom right section 3 (5)
+1013  FE0C FF 00 00 00
+1014  FE10 FF FF FF FF   DB 255,255,255,255,255,255,0,0     ;c2 bottom right section 3 (6)
+1014  FE14 FF FF 00 00
+1015  FE18 FF FF FF FF   DB 255,255,255,255,255,255,255,0   ;c3 bottom right section 3 (6)
+1015  FE1C FF FF FF 00
+1016  FE20 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c4 bottom right section 3 (6)
+1016  FE24 FF FF FF FF
+1017  FE28
+1018  FE28              ;layer 5 section 3 left BOTTOM TBD
+1019  FE28
+1020  FE28 00 00 00 FF   DB 0,0,0,255,255,255,255,255       ;c5 bottom right section 3 (5)
+1020  FE2C FF FF FF FF
+1021  FE30 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;c6 bottom right section 3 (6)
+1021  FE34 FF FF FF FF
+1022  FE38 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;c7 bottom right section 3 (6)
+1022  FE3C FF FF FF FF
+1023  FE40 FF FF FF FF   DB 255,255,255,255,255,255,255,255 ;c8 bottom right section 3 (6)
+1023  FE44 FF FF FF FF
+1024  FE48
+1025  FE48
+1026  FE48              ;layer 5 section 4 right TOP
+1027  FE48
+1028  FE48 00 00 00 00   DB 0,0,0,0,0,0,0,255               ;c9 top right section 3 (4)
+1028  FE4C 00 00 00 FF
+1029  FE50 00 00 00 00   DB 0,0,0,0,0,0,255,255             ;ca top right section 3 (4)
+1029  FE54 00 00 FF FF
+1030  FE58 00 00 00 00   DB 0,0,0,0,255,255,255,255         ;cb top right section 3 (3)
+1030  FE5C FF FF FF FF
+1031  FE60 00 00 FF FF   DB 0,0,255,255,255,255,255,255     ;cc top right section 3 (2)
+1031  FE64 FF FF FF FF
+1032  FE68 00 FF FF FF   DB 0,255,255,255,255,255,255,255   ;cd top right section 3 (1)
+1032  FE6C FF FF FF FF
+1033  FE70
+1034  FE70              ;layer 5 section 4 right BOTTOM
+1035  FE70
+1036  FE70 FF 00 00 00   db 255,0,0,0,0,0,0,0               ;ce top right section 3 (6)
+1036  FE74 00 00 00 00
+1037  FE78 FF FF 00 00   db 255,255,0,0,0,0,0,0             ;cf top right section 3 (6)
+1037  FE7C 00 00 00 00
+1038  FE80 FF FF FF FF   db 255,255,255,255,0,0,0,0         ;d0 top right section 3 (6)
+1038  FE84 00 00 00 00
+1039  FE88 FF FF FF FF   db 255,255,255,255,255,255,0,0     ;d1 top right section 3 (6)
+1039  FE8C FF FF 00 00
+1040  FE90 FF FF FF FF   db 255,255,255,255,255,255,255,0   ;d2 top right section 3 (6)
+1040  FE94 FF FF FF 00
+1041  FE98
+1042  FE98
+1043  FE98              ;Extra wall5
+1044  FE98              ; db	249,63,243,159,244,47,249,143 	;c9	small wall stretched more
+1045  FE98              ; db 255,15,255,31,255,15,255,15	   	;ca	small wall stretched
+1046  FE98              ; db 240,15,224,31,224,15,112,15	   	;cb	small wall stretched
+1047  FE98
+1048  FE98              ;triangular door wood parts
+1049  FE98 FF FF FE FB   db	255,255,254,251,249,228,228,146     ;d3	   ;door wood effect top corner 1 right side($80)
+1049  FE9C F9 E4 E4 92
+1050  FEA0 88 CB E7 F3   db	136,203,231,243,249,252,254,255	    ;d4	   ;door wood effect bottom corner 1 (80)
+1050  FEA4 F9 FC FE FF
+1051  FEA8 FF FE FE FC   db	255,254,254,252,254,238,229,146     ;d5	   ;door wood effect top corner 3 right side($82)
+1051  FEAC FE EE E5 92
+1052  FEB0 91 CA E2 F4   db	145,202,226,244,250,252,254,255    	;d6    ;door wood effect bottom corner 1 (82)
+1052  FEB4 FA FC FE FF
+1053  FEB8
+1054  FEB8              ;additional characters for level numbers printed on right of display
+1055  FEB8              ;single caracter 10,11,12,13,14,15
+1056  FEB8 00 4C 52 52    db  0,76,82,82,82,82,76,0             ;d7
+1056  FEBC 52 52 4C 00
+1057  FEC0 00 48 48 48    db  0,72,72,72,72,72,72,0             ;d8
+1057  FEC4 48 48 48 00
+1058  FEC8 00 4C 52 42    db  0,76,82,66,68,72,94,0             ;d9
+1058  FECC 44 48 5E 00
+1059  FED0 00 4C 52 46    db  0,76,82,70,66,82,76,0             ;da
+1059  FED4 42 52 4C 00
+1060  FED8 00 42 46 4A    db  0,66,70,74,94,66,66,0             ;db
+1060  FEDC 5E 42 42 00
+1061  FEE0 00 4E 50 4C    db  0,78,80,76,66,82,76,0             ;dc
+1061  FEE4 42 52 4C 00
+1062  FEE8
+1063  FEE8              ;characters to print around the switch
+1064  FEE8 FF 00 FF 00    db  255,0,255,0,255,0,255,0           ;dd  ;horizontal bars x 4
+1064  FEEC FF 00 FF 00
+1065  FEF0 FF 80 BF A0    db  255,128,191,160,175,168,171,170   ;de  ;top left corner
+1065  FEF4 AF A8 AB AA
+1066  FEF8 AA AB A8 AF    db  170,171,168,175,160,191,128,255   ;df  ;bot left corner
+1066  FEFC A0 BF 80 FF
+1067  FF00 AA AA AA AA    db  170,170,170,170,170,170,170,170   ;e0  ;vertical bars
+1067  FF04 AA AA AA AA
+1068  FF08 FF 01 FD 05    db  255,1,253,5,245,21,213,85         ;e1  ;top right corner
+1068  FF0C F5 15 D5 55
+1069  FF10 55 D5 15 F5    db  85,213,21,245,5,253,1,255         ;e2  ;bot right corner
+1069  FF14 05 FD 01 FF
+1070  FF18 00 FF 00 FF    db  0,255,0,255,0,255,0,255           ;e3  ;bot horizontal bars
+1070  FF1C 00 FF 00 FF
+1071  FF20 55 55 55 55    db  85,85,85,85,85,85,85,85           ;e4  ;right vertical bars
+1071  FF24 55 55 55 55
+1072  FF28
+1073  FF28              ;side view switch chars
+1074  FF28 FF FF FE FC    db  255,255,254,252,249,242,228,201   ;e5 ;top triangle bit
+1074  FF2C F9 F2 E4 C9
+1075  FF30 92 A4 A9 AA    db  146,164,169,170,170,170,170,170   ;e6 ; top left corner
+1075  FF34 AA AA AA AA
+1076  FF38 FF 01 7D 85    db  255,1,125,133,53,85,149,21        ;e7 ;top right corner
+1076  FF3C 35 55 95 15
+1077  FF40 55 D5 55 55    db  85,213,85,85,85,85,85,85          ;e8 ;2nd top line bottom right bit
+1077  FF44 55 55 55 55
+1078  FF48 40 80 00 00    db  64,128,0,0,0,0,0,0                ;e9 ;3rd top line bottom 2nd right bit
+1078  FF4C 00 00 00 00
+1079  FF50 92 24 49 92    db  146,36,73,146,36,72,144,32        ;ea ;top horizontal line
+1079  FF54 24 48 90 20
+1080  FF58
+1081  FF58 C9 E4 F2 F9    db  201,228,242,249,252,254,255,255  ;eb   ;bottom triangle bit
+1081  FF5C FC FE FF FF
+1082  FF60 15 95 55 35    db  21,149,85,53,133,125,1,255       ;ec ;bottom right corner
+1082  FF64 85 7D 01 FF
+1083  FF68 55 55 55 55    db  85,85,85,85,85,85,213,85         ;ed ;2nd bottom line bottom right bit
+1083  FF6C 55 55 D5 55
+1084  FF70 AA AA AA AA    db  170,170,170,170,170,169,164,146  ;ee   ;bottom left corner
+1084  FF74 AA A9 A4 92
+1085  FF78 00 00 00 00    db  0,0,0,0,0,0,128,64               ;ef ;3rd top line bottom 2nd right bit
+1085  FF7C 00 00 80 40
+1086  FF80 20 90 48 24    db  32,144,72,36,146,73,36,146       ;f0 ;bottom horizontal line
+1086  FF84 92 49 24 92
+1087  FF88
+1088  FF88 00 00 00 00    db   0,0,0,0,32,0,0,1                ;f1 ;stars for the inside of the closed door
+1088  FF8C 20 00 00 01
+1089  FF90 00 08 00 00    db   0,8,0,0,0,0,0,0                 ;f2 ;stars for the inside of the closed door
+1089  FF94 00 00 00 00
+1090  FF98
+1091  FF98
+1092  FF98
+1093  FF98              ;END_PROGRAM
 1094  FF98
 1095  FF98
-1096  FF98
-1097  FF98              ;END_PROGRAM
-1098  FF98
-1099  FF98
-1100  FF98              ;for SJASMPLUS
-1101  FF98              ;;
-1102  FF98              ;; Set up the Nex output
-1103  FF98              ;;
-1104  FF98
-1105  FF98                      ; This sets the name of the project, the start address,
-1106  FF98                      ; and the initial stack pointer.
-1107  FF98               ;       SAVENEX OPEN "3dmaze.nex";, start_game  ;, END_PROGRAM
-1108  FF98                      SAVEBIN "3dmaze.bin",32768,32767
+1096  FF98              ;for SJASMPLUS
+1097  FF98              ;;
+1098  FF98              ;; Set up the Nex output
+1099  FF98              ;;
+1100  FF98
+1101  FF98                      ; This sets the name of the project, the start address,
+1102  FF98                      ; and the initial stack pointer.
+1103  FF98               ;       SAVENEX OPEN "3dmaze.nex";, start_game  ;, END_PROGRAM
+1104  FF98                      SAVEBIN "3dmaze.bin",32768,32767
+1105  FF98
+1106  FF98                      ; This asserts the minimum core version.  Set it to the core version
+1107  FF98                      ; you are developing on.
+1108  FF98              ;        SAVENEX CORE 2,0,0
 1109  FF98
-1110  FF98                      ; This asserts the minimum core version.  Set it to the core version
-1111  FF98                      ; you are developing on.
-1112  FF98              ;        SAVENEX CORE 2,0,0
-1113  FF98
-1114  FF98                      ; This sets the border colour while loading (in this case white),
-1115  FF98                      ; what to do with the file handle of the nex file when starting (0 =
-1116  FF98                      ; close file handle as we're not going to access the project.nex
-1117  FF98                      ; file after starting.  See sjasmplus documentation), whether
-1118  FF98                      ; we preserve the next registers (0 = no, we set to default), and
-1119  FF98                      ; whether we require the full 2MB expansion (0 = no we don't).
-1120  FF98              ;        SAVENEX CFG 7,0,0,0
-1121  FF98
-1122  FF98                      ; Generate the Nex file automatically based on which pages you use.
-1123  FF98              ;        SAVENEX AUTO
-1124  FF98
+1110  FF98                      ; This sets the border colour while loading (in this case white),
+1111  FF98                      ; what to do with the file handle of the nex file when starting (0 =
+1112  FF98                      ; close file handle as we're not going to access the project.nex
+1113  FF98                      ; file after starting.  See sjasmplus documentation), whether
+1114  FF98                      ; we preserve the next registers (0 = no, we set to default), and
+1115  FF98                      ; whether we require the full 2MB expansion (0 = no we don't).
+1116  FF98              ;        SAVENEX CFG 7,0,0,0
+1117  FF98
+1118  FF98                      ; Generate the Nex file automatically based on which pages you use.
+1119  FF98              ;        SAVENEX AUTO
+1120  FF98
 # file closed: src/rd3dmazeV6-sj.asm

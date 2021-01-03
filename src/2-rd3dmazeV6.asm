@@ -169,7 +169,7 @@ rep3:   push af
         jr nz,rep3        ;exit when a=0
 
         nextreg $69,0       ;turn off screen buffering so we write directly to the screen 
-        ld a,14
+        ld a, 10;14
         ld (ULABank),a    ;tell the flip ula routine which page is being viewed
         ;set min speed!
         nextreg 7,0
